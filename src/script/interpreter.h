@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <mutex>
 #include <vector>
 
 class CPubKey;
@@ -180,7 +181,7 @@ struct PrecomputedTransactionData
     bool m_bip341_taproot_ready = false;
 
     //! Whether the bip119 fields above are initialized.
-    bool m_bip119_ctv_ready = false;
+    std::unique_ptr<std::once_flag> m_bip119_ctv_init;
 
     //! Whether the bip143 fields above are initialized.
     bool m_bip143_segwit_ready = false;
@@ -188,7 +189,7 @@ struct PrecomputedTransactionData
     //! Whether m_spent_outputs is initialized.
     bool m_spent_outputs_ready = false;
 
-    PrecomputedTransactionData() = default;
+    PrecomputedTransactionData() : m_bip119_ctv_init(std::make_unique<std::once_flag>()) {};
 
     /** Initialize this PrecomputedTransactionData with transaction data.
      *
@@ -199,6 +200,8 @@ struct PrecomputedTransactionData
      *                             time, when the inputs aren't filled in yet). */
     template <class T>
     void Init(const T& tx, std::vector<CTxOut>&& spent_outputs, bool force = false);
+    template <class T>
+    void BIP119LazyInit(const T& tx);
 
     template <class T>
     explicit PrecomputedTransactionData(const T& tx);
@@ -315,7 +318,7 @@ private:
     const MissingDataBehavior m_mdb;
     unsigned int nIn;
     const CAmount amount;
-    const PrecomputedTransactionData* txdata;
+    PrecomputedTransactionData* txdata;
 
 protected:
     virtual bool VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& vchPubKey, const uint256& sighash) const;
@@ -323,7 +326,7 @@ protected:
 
 public:
     GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn, MissingDataBehavior mdb) : txTo(txToIn), m_mdb(mdb), nIn(nInIn), amount(amountIn), txdata(nullptr) {}
-    GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn, MissingDataBehavior mdb) : txTo(txToIn), m_mdb(mdb), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
+    GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn, PrecomputedTransactionData& txdataIn, MissingDataBehavior mdb) : txTo(txToIn), m_mdb(mdb), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
     bool CheckECDSASignature(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
     bool CheckSchnorrSignature(Span<const unsigned char> sig, Span<const unsigned char> pubkey, SigVersion sigversion, ScriptExecutionData& execdata, ScriptError* serror = nullptr) const override;
     bool CheckLockTime(const CScriptNum& nLockTime) const override;
