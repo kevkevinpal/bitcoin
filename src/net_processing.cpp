@@ -3549,7 +3549,9 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                 LOCK(tx_relay->m_bloom_filter_mutex);
                 tx_relay->m_relay_txs = fRelay; // set to true after we get the first filter* message
             }
-            if (fRelay) pfrom.m_relays_txs = true;
+            if (fRelay) {
+                m_evictionman.UpdateRelayTxs(pfrom.GetId());
+            }
         }
 
         if (greatest_common_version >= WTXID_RELAY_VERSION && m_txreconciliation) {
@@ -4829,8 +4831,8 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                 tx_relay->m_bloom_filter.reset(new CBloomFilter(filter));
                 tx_relay->m_relay_txs = true;
             }
-            pfrom.m_bloom_filter_loaded = true;
-            pfrom.m_relays_txs = true;
+            m_evictionman.UpdateLoadedBloomFilter(pfrom.GetId(), true);
+            m_evictionman.UpdateRelayTxs(pfrom.GetId());
         }
         return;
     }
@@ -4877,8 +4879,9 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             tx_relay->m_bloom_filter = nullptr;
             tx_relay->m_relay_txs = true;
         }
-        pfrom.m_bloom_filter_loaded = false;
-        pfrom.m_relays_txs = true;
+
+        m_evictionman.UpdateLoadedBloomFilter(pfrom.GetId(), false);
+        m_evictionman.UpdateRelayTxs(pfrom.GetId());
         return;
     }
 
