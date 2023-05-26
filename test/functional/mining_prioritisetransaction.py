@@ -30,6 +30,28 @@ class PrioritiseTransactionTest(BitcoinTestFramework):
         ]] * self.num_nodes
         self.supports_cli = False
 
+    def clear_prioritisation_with_explicit_delta(self):
+        self.log.info("Test my stuff")
+        conflicting_input = self.wallet.get_utxo()
+        tx_replacee = self.wallet.create_self_transfer(utxo_to_spend=conflicting_input, fee_rate=Decimal("0.0001"))
+        tx_replacement = self.wallet.create_self_transfer(utxo_to_spend=conflicting_input, fee_rate=Decimal("0.005"))
+        # Add 1 satoshi fee delta to replacee
+        self.nodes[0].prioritisetransaction(tx_replacee["txid"], 0, 100)
+        assert_equal(self.nodes[0].getprioritisedtransactions(), { tx_replacee["txid"] : { "fee_delta" : 100, "in_mempool" : False}})
+        self.nodes[0].sendrawtransaction(tx_replacee["hex"])
+        assert_equal(self.nodes[0].getprioritisedtransactions(), { tx_replacee["txid"] : { "fee_delta" : 100, "in_mempool" : True}})
+        self.nodes[0].sendrawtransaction(tx_replacement["hex"])
+        assert tx_replacee["txid"] not in self.nodes[0].getrawmempool()
+        assert_equal(self.nodes[0].getprioritisedtransactions(), { tx_replacee["txid"] : { "fee_delta" : 100, "in_mempool" : False}})
+
+        # PrioritiseTransaction is additive
+        self.nodes[0].prioritisetransaction(tx_replacee["txid"], 0, COIN)
+        self.nodes[0].sendrawtransaction(tx_replacee["hex"])
+        assert_equal(self.nodes[0].getprioritisedtransactions(), { tx_replacee["txid"] : { "fee_delta" : COIN + 100, "in_mempool" : True}})
+        for txid, _ in self.nodes[0].getprioritisedtransactions().items():
+            self.nodes[0].prioritisetransaction(txid, 0, delta=0)
+        assert_equal(self.nodes[0].getprioritisedtransactions(), {})
+
     def clear_prioritisation(self, node):
         for txid, info in node.getprioritisedtransactions().items():
             delta = info["fee_delta"]
@@ -176,6 +198,7 @@ class PrioritiseTransactionTest(BitcoinTestFramework):
 
         self.test_replacement()
         self.test_diamond()
+        #self.clear_prioritisation_with_explicit_delta()
 
         self.txouts = gen_return_txouts()
         self.relayfee = self.nodes[0].getnetworkinfo()['relayfee']

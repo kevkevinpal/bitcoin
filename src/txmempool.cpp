@@ -883,14 +883,18 @@ void CTxMemPool::PrioritiseTransaction(const uint256& hash, const CAmount& nFeeD
     }
 }
 
-void CTxMemPool::ApplyDelta(const uint256& hash, CAmount &nFeeDelta) const
+void CTxMemPool::ApplyDelta(const uint256& hash, CAmount &nFeeDelta, bool isExact) const
 {
     AssertLockHeld(cs);
     std::map<uint256, CAmount>::const_iterator pos = mapDeltas.find(hash);
     if (pos == mapDeltas.end())
         return;
     const CAmount &delta = pos->second;
-    nFeeDelta += delta;
+		if(isExact){
+				nFeeDelta = delta;
+		}else{
+				nFeeDelta += delta;
+		}
 }
 
 void CTxMemPool::ClearPrioritisation(const uint256& hash)

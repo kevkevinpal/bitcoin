@@ -456,6 +456,7 @@ static RPCHelpMan prioritisetransaction()
             "                  Note, that this value is not a fee rate. It is a value to modify absolute fee of the TX.\n"
             "                  The fee is not actually paid, only the algorithm for selecting transactions into a block\n"
             "                  considers the transaction as it would have paid a higher (or lower) fee."},
+                    {"delta", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "The fee value (in satoshis) to set exactly."}
                 },
                 RPCResult{
                     RPCResult::Type::BOOL, "", "Returns true"},
@@ -474,6 +475,11 @@ static RPCHelpMan prioritisetransaction()
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Priority is no longer supported, dummy argument to prioritisetransaction must be 0.");
     }
 
+		/*if(!request.params[3].isNull()){
+						    CAmount delta_zero{0};
+				EnsureAnyMemPool(request.context).ApplyDelta(hash, delta_zero, true);
+
+		}*/
     EnsureAnyMemPool(request.context).PrioritiseTransaction(hash, nAmount);
     return true;
 },
