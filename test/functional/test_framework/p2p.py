@@ -527,14 +527,9 @@ class P2PInterface(P2PConnection):
             last_header = self.last_message.get("getheaders")
             if not last_header:
                 return False
-            #print("blockhash %s" % (int(blockhash, 16)))
             print("last_header vhave %s" % (last_header.locator.vHave[0]))
             print("blockhash %s" % (blockhash))
             return last_header.locator.vHave[0] == blockhash 
-            #return last_header.getheaders() == int(blockhash, 16) 
-            #print("all them %s %s" % (int(blockhash, 16), last_header.locator.vHave[0]))
-            #return last_header.hashstop == header_hash 
-            #return last_header.headers[0].rehash() == int(blockhash, 16)
 
         self.wait_until(test_function, timeout=timeout)
 
