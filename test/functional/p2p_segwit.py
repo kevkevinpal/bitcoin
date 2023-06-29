@@ -193,14 +193,15 @@ class TestP2PConn(P2PInterface):
     def announce_block_and_wait_for_getdata(self, block, use_header, timeout=60):
         with p2p_lock:
             self.last_message.pop("getdata", None)
-            self.last_message.pop("getheaders", None)
         msg = msg_headers()
         msg.headers = [CBlockHeader(block)]
         if use_header:
             self.send_message(msg)
         else:
-            self.send_message(msg_inv(inv=[CInv(MSG_BLOCK, block.sha256)]))
-            self.wait_for_getheaders()
+            message_inv = msg_inv(inv=[CInv(MSG_BLOCK, block.sha256)])
+            self.send_message(message_inv)
+            headers = self.last_message['getheaders']
+            self.wait_for_getheaders(headers.locator.vHave[0])
             self.send_message(msg)
         self.wait_for_getdata([block.sha256])
 
