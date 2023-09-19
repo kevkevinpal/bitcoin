@@ -13,7 +13,6 @@
 #include <cstdint>
 #include <hash.h>
 #include <logging.h>
-#include <logging/timer.h>
 #include <netbase.h>
 #include <netgroup.h>
 #include <random.h>
