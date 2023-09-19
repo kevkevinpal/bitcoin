@@ -8,7 +8,6 @@
 
 #include <hash.h>
 #include <logging.h>
-#include <logging/timer.h>
 #include <netaddress.h>
 #include <protocol.h>
 #include <random.h>

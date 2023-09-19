@@ -26,7 +26,6 @@
 #include <kernel/messagestartchars.h>
 #include <kernel/notifications_interface.h>
 #include <logging.h>
-#include <logging/timer.h>
 #include <node/blockstorage.h>
 #include <node/utxo_snapshot.h>
 #include <policy/policy.h>

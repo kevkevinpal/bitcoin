@@ -6,7 +6,6 @@
 #define BITCOIN_ADDRMAN_IMPL_H
 
 #include <logging.h>
-#include <logging/timer.h>
 #include <netaddress.h>
 #include <protocol.h>
 #include <serialize.h>
