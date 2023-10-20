@@ -69,6 +69,7 @@ class MempoolPackagesTest(BitcoinTestFramework):
         descendant_vsize = 0
 
         assert_equal(ancestor_vsize, sum([mempool[tx]['vsize'] for tx in mempool]))
+        assert_equal(ancestor_vsize, sum([mempool[tx]['vsize_bip141'] for tx in mempool]))
         ancestor_count = DEFAULT_ANCESTOR_LIMIT
         assert_equal(ancestor_fees, sum([mempool[tx]['fees']['base'] for tx in mempool]))
 

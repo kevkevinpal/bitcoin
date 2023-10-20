@@ -288,6 +288,7 @@ class SegWitTest(BitcoinTestFramework):
 
         # Check that weight and vsize are properly reported in mempool entry (txid1)
         assert_equal(self.nodes[0].getmempoolentry(txid1)["vsize"], tx1.get_vsize())
+        assert_equal(self.nodes[0].getmempoolentry(txid1)["vsize_bip141"], tx1.get_vsize())
         assert_equal(self.nodes[0].getmempoolentry(txid1)["weight"], tx1.get_weight())
 
         # Now create tx2, which will spend from txid1.
@@ -304,6 +305,7 @@ class SegWitTest(BitcoinTestFramework):
 
         # Check that weight and vsize are properly reported in mempool entry (txid2)
         assert_equal(self.nodes[0].getmempoolentry(txid2)["vsize"], tx.get_vsize())
+        assert_equal(self.nodes[0].getmempoolentry(txid2)["vsize_bip141"], tx.get_vsize())
         assert_equal(self.nodes[0].getmempoolentry(txid2)["weight"], tx.get_weight())
 
         # Now create tx3, which will spend from txid2
@@ -327,6 +329,7 @@ class SegWitTest(BitcoinTestFramework):
 
         # Check that weight and vsize are properly reported in mempool entry (txid3)
         assert_equal(self.nodes[0].getmempoolentry(txid3)["vsize"], tx.get_vsize())
+        assert_equal(self.nodes[0].getmempoolentry(txid3)["vsize_bip141"], tx.get_vsize())
         assert_equal(self.nodes[0].getmempoolentry(txid3)["weight"], tx.get_weight())
 
         # Mine a block to clear the gbt cache again.

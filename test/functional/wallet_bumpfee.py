@@ -397,6 +397,7 @@ def test_notmine_bumpfee(self, rbf_node, peer_node, dest_address):
     entry = rbf_node.getmempoolentry(rbfid)
     old_fee = entry["fees"]["base"]
     old_feerate = int(old_fee / entry["vsize"] * Decimal(1e8))
+    old_feerate_bip141 = int(old_fee / entry["vsize_bip141"] * Decimal(1e8))
     assert_raises_rpc_error(-4, "Transaction contains inputs that don't belong to this wallet",
                             rbf_node.bumpfee, rbfid)
 
@@ -413,6 +414,9 @@ def test_notmine_bumpfee(self, rbf_node, peer_node, dest_address):
     finish_psbtbumpfee(psbt["psbt"])
 
     psbt = rbf_node.psbtbumpfee(txid=rbfid, fee_rate=old_feerate + 10)
+    finish_psbtbumpfee(psbt["psbt"])
+
+    psbt = rbf_node.psbtbumpfee(txid=rbfid, fee_rate=old_feerate_bip141 + 10)
     finish_psbtbumpfee(psbt["psbt"])
 
     self.clear_mempool()

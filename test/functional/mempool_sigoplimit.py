@@ -91,6 +91,7 @@ class BytesPerSigOpTest(BitcoinTestFramework):
         res = self.nodes[0].testmempoolaccept([tx.serialize().hex()])[0]
         assert_equal(res['allowed'], True)
         assert_equal(res['vsize'], sigop_equivalent_vsize)
+        assert_equal(res['vsize_bip141'], sigop_equivalent_vsize)
 
         # increase the tx's vsize to be right above the sigop-limit equivalent size
         # => tx's vsize in mempool should also grow accordingly
