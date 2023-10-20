@@ -207,11 +207,14 @@ class PrioritiseTransactionTest(BitcoinTestFramework):
         # create more transactions.
         mempool = self.nodes[0].getrawmempool(True)
         sizes = [0, 0, 0]
+        sizes_bip141 = [0, 0, 0]
         for i in range(3):
             for j in txids[i]:
                 assert j in mempool
                 sizes[i] += mempool[j]['vsize']
+                sizes_bip141[i] += mempool[j]['vsize_bip141']
             assert sizes[i] > MAX_BLOCK_WEIGHT // 4  # Fail => raise utxo_count
+            assert sizes_bip141[i] > MAX_BLOCK_WEIGHT // 4  # Fail => raise utxo_count
 
         assert_equal(self.nodes[0].getprioritisedtransactions(), {})
         # add a fee delta to something in the cheapest bucket and make sure it gets mined

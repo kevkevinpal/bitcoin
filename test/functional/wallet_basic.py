@@ -60,6 +60,9 @@ class WalletTest(BitcoinTestFramework):
     def get_vsize(self, txn):
         return self.nodes[0].decoderawtransaction(txn)['vsize']
 
+    def get_vsize_bip141(self, txn):
+        return self.nodes[0].decoderawtransaction(txn)['vsize_bip141']
+
     def run_test(self):
 
         # Check that there's no UTXO on none of the nodes
@@ -487,10 +490,12 @@ class WalletTest(BitcoinTestFramework):
             # Test passing fee_rate as an integer
             txid = self.nodes[2].sendtoaddress(address=address, amount=amount, fee_rate=fee_rate_sat_vb)
             tx_size = self.get_vsize(self.nodes[2].gettransaction(txid)['hex'])
+            tx_size_bip141 = self.get_vsize_bip141(self.nodes[2].gettransaction(txid)['hex'])
             self.generate(self.nodes[0], 1, sync_fun=lambda: self.sync_all(self.nodes[0:3]))
             postbalance = self.nodes[2].getbalance()
             fee = prebalance - postbalance - Decimal(amount)
             assert_fee_amount(fee, tx_size, Decimal(fee_rate_btc_kvb))
+            assert_fee_amount(fee, tx_size_bip141, Decimal(fee_rate_btc_kvb))
 
             prebalance = self.nodes[2].getbalance()
             amount = Decimal("0.001")
@@ -499,10 +504,12 @@ class WalletTest(BitcoinTestFramework):
             # Test passing fee_rate as a string
             txid = self.nodes[2].sendtoaddress(address=address, amount=amount, fee_rate=str(fee_rate_sat_vb))
             tx_size = self.get_vsize(self.nodes[2].gettransaction(txid)['hex'])
+            tx_size_bip141 = self.get_vsize_bip141(self.nodes[2].gettransaction(txid)['hex'])
             self.generate(self.nodes[0], 1, sync_fun=lambda: self.sync_all(self.nodes[0:3]))
             postbalance = self.nodes[2].getbalance()
             fee = prebalance - postbalance - amount
             assert_fee_amount(fee, tx_size, Decimal(fee_rate_btc_kvb))
+            assert_fee_amount(fee, tx_size_bip141, Decimal(fee_rate_btc_kvb))
 
             # Test setting explicit fee rate just below the minimum.
             self.log.info("Test sendtoaddress raises 'fee rate too low' if fee_rate of 0.99999999 is passed")
