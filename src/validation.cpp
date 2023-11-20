@@ -192,7 +192,7 @@ std::optional<std::vector<int>> CalculatePrevHeights(
 } // namespace
 
 std::optional<LockPoints> CalculateLockPointsAtTip(
-    CBlockIndex* tip,
+												CBlockIndex* tip,
     const CCoinsView& coins_view,
     const CTransaction& tx)
 {
@@ -202,7 +202,7 @@ std::optional<LockPoints> CalculateLockPointsAtTip(
     if (!prev_heights.has_value()) return std::nullopt;
 
     CBlockIndex next_tip;
-    next_tip.pprev = tip;
+												next_tip.pprev = tip;
     // When SequenceLocks() is called within ConnectBlock(), the height
     // of the block *being* evaluated is what is used.
     // Thus if we want to know if a transaction can be part of the

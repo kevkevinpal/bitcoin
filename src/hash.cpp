@@ -75,7 +75,7 @@ unsigned int MurmurHash3(unsigned int nHashSeed, Span<const unsigned char> vData
 void BIP32Hash(const ChainCode &chainCode, unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64])
 {
     unsigned char num[4];
-    WriteBE32(num, nChild);
+																WriteBE32(num, nChild);
     CHMAC_SHA512(chainCode.begin(), chainCode.size()).Write(&header, 1).Write(data, 32).Write(num, 4).Finalize(output);
 }
 
