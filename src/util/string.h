@@ -16,6 +16,7 @@
 #include <string_view>
 #include <vector>
 
+namespace util {
 void ReplaceAll(std::string& in_out, const std::string& search, const std::string& substitute);
 
 [[nodiscard]] inline std::vector<std::string> SplitString(std::string_view str, char sep)
@@ -124,5 +125,18 @@ template <typename T1, size_t PREFIX_LEN>
     return obj.size() >= PREFIX_LEN &&
            std::equal(std::begin(prefix), std::end(prefix), std::begin(obj));
 }
+} // namespace util
+
+using util::ReplaceAll;
+using util::SplitString;
+using util::TrimStringView;
+using util::TrimString;
+using util::RemovePrefixView;
+using util::RemovePrefix;
+using util::Join;
+using util::MakeUnorderedList;
+using util::ContainsNoNUL;
+using util::ToString;
+using util::HasPrefix;
 
 #endif // BITCOIN_UTIL_STRING_H
