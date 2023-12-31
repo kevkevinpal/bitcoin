@@ -667,8 +667,9 @@ static RPCHelpMan getblocktemplate()
                 throw JSONRPCError(RPC_TYPE_ERROR, "Missing data String key for proposal");
 
             CBlock block;
-            if (!DecodeHexBlk(block, dataval.get_str()))
+            /* if (!DecodeHexBlk(block, dataval.get_str()))
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
+						*/
 
             uint256 hash = block.GetHash();
             const CBlockIndex* pindex = chainman.m_blockman.LookupBlockIndex(hash);
