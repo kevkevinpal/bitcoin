@@ -667,7 +667,7 @@ class TestNode():
                     assert_msg += "with expected error " + expected_msg
                 self._raise_assertion_error(assert_msg)
 
-    def add_p2p_connection(self, p2p_conn, *, wait_for_verack=True, send_version=True, supports_v2_p2p=False, **kwargs):
+    def add_p2p_connection(self, p2p_conn, *, wait_for_verack=True, send_version=True, supports_v2_p2p=False, wait_for_disconnect=False, **kwargs):
         """Add an inbound p2p connection to the node.
 
         This method adds the p2p connection to the self.p2ps list and also
@@ -691,6 +691,9 @@ class TestNode():
         supports_v2_p2p = self.use_v2transport and supports_v2_p2p
         p2p_conn.peer_connect(**kwargs, send_version=send_version, net=self.chain, timeout_factor=self.timeout_factor, supports_v2_p2p=supports_v2_p2p)()
 
+        if wait_for_disconnect:
+            p2p_conn.wait_until(lambda: not p2p_conn.is_connected, check_connected=False)
+            return
         self.p2ps.append(p2p_conn)
         p2p_conn.wait_until(lambda: p2p_conn.is_connected, check_connected=False)
         if send_version:
