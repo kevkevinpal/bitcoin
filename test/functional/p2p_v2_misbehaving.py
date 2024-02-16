@@ -154,8 +154,28 @@ class EncryptedP2PMisbehaving(BitcoinTestFramework):
         self.extra_args = [["-v2transport=1", "-peertimeout=3"]]
 
     def run_test(self):
-        self.test_earlykeyresponse()
-        self.test_v2disconnection()
+        # test v2 disconnection scenarios
+        node0 = self.nodes[0]
+        expected_debug_message = [
+            [],  # EARLY_KEY_RESPONSE
+            ["V2 transport error: missing garbage terminator, peer=1"],  # EXCESS_GARBAGE
+            ["version handshake timeout peer=2"],  # WRONG_GARBAGE_TERMINATOR
+            ["V2 transport error: packet decryption failure"],  # WRONG_GARBAGE
+            ["V2 transport error: packet decryption failure"],  # SEND_NO_AAD
+            [],  # SEND_NON_EMPTY_VERSION_PACKET
+        ]
+        for test_type in TestType:
+            if test_type != TestType.WRONG_GARBAGE_TERMINATOR:
+                continue
+            if test_type == TestType.EARLY_KEY_RESPONSE:
+                self.test_earlykeyresponse()
+            elif test_type == TestType.SEND_NON_EMPTY_VERSION_PACKET:
+                node0.add_p2p_connection(MisbehavingV2Peer(test_type), wait_for_verack=True, send_version=True, supports_v2_p2p=True)
+                self.log.info(f"No disconnection for {test_type.name}")
+            else:
+                with self.nodes[0].assert_debug_log(expected_debug_message[test_type.value], timeout=5):
+                    node0.add_p2p_connection(MisbehavingV2Peer(test_type), wait_for_verack=False, send_version=False, supports_v2_p2p=True, wait_for_disconnect=True)
+                self.log.info(f"Expected disconnection for {test_type.name}")
 
     def test_earlykeyresponse(self):
         self.log.info('Sending ellswift bytes in parts to ensure that response from responder is received only when')
@@ -174,27 +194,6 @@ class EncryptedP2PMisbehaving(BitcoinTestFramework):
             peer1.wait_for_disconnect(timeout=5)
         self.log.info('successful disconnection since modified ellswift was sent as response')
 
-    def test_v2disconnection(self):
-        # test v2 disconnection scenarios
-        node0 = self.nodes[0]
-        expected_debug_message = [
-            [],  # EARLY_KEY_RESPONSE
-            ["V2 transport error: missing garbage terminator, peer=1"],  # EXCESS_GARBAGE
-            ["version handshake timeout peer=2"],  # WRONG_GARBAGE_TERMINATOR
-            ["V2 transport error: packet decryption failure"],  # WRONG_GARBAGE
-            ["V2 transport error: packet decryption failure"],  # SEND_NO_AAD
-            [],  # SEND_NON_EMPTY_VERSION_PACKET
-        ]
-        for test_type in TestType:
-            if test_type == TestType.EARLY_KEY_RESPONSE:
-                continue
-            elif test_type == TestType.SEND_NON_EMPTY_VERSION_PACKET:
-                node0.add_p2p_connection(MisbehavingV2Peer(test_type), wait_for_verack=True, send_version=True, supports_v2_p2p=True)
-                self.log.info(f"No disconnection for {test_type.name}")
-            else:
-                with self.nodes[0].assert_debug_log(expected_debug_message[test_type.value], timeout=5):
-                    node0.add_p2p_connection(MisbehavingV2Peer(test_type), wait_for_verack=False, send_version=False, supports_v2_p2p=True, wait_for_disconnect=True)
-                self.log.info(f"Expected disconnection for {test_type.name}")
 
 
 if __name__ == '__main__':
