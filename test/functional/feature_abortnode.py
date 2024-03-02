@@ -22,6 +22,7 @@ class AbortNodeTest(BitcoinTestFramework):
         # We'll connect the nodes later
 
     def run_test(self):
+        assert True == False
         self.generate(self.nodes[0], 3, sync_fun=self.no_op)
 
         # Deleting the undo file will result in reorg failure
