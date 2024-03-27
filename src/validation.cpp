@@ -1983,7 +1983,6 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState& state,
     uint256 hashCacheEntry;
     CSHA256 hasher = g_scriptExecutionCacheHasher;
     hasher.Write(UCharCast(tx.GetWitnessHash().begin()), 32).Write((unsigned char*)&flags, sizeof(flags)).Finalize(hashCacheEntry.begin());
-    AssertLockHeld(cs_main); //TODO: Remove this requirement by making CuckooCache not require external locks
     if (g_scriptExecutionCache.contains(hashCacheEntry, !cacheFullScriptStore)) {
         return true;
     }
@@ -2045,6 +2044,7 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState& state,
     if (cacheFullScriptStore && !pvChecks) {
         // We executed all of the provided scripts, and were told to
         // cache the result. Do so now.
+        AssertLockHeld(cs_main); //TODO: Remove this requirement by making CuckooCache not require external locks
         g_scriptExecutionCache.insert(hashCacheEntry);
     }
 
