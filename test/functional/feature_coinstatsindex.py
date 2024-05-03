@@ -28,6 +28,7 @@ from test_framework.script import (
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
+    assert_greater_than,
     assert_raises_rpc_error,
 )
 from test_framework.wallet import (
@@ -226,7 +227,7 @@ class CoinStatsIndexTest(BitcoinTestFramework):
 
         self.generate(index_node, 1, sync_fun=self.no_op)
         res10 = index_node.gettxoutsetinfo('muhash')
-        assert res8['txouts'] < res10['txouts']
+        assert_greater_than(res10['txouts'], res8['txouts'])
 
         self.log.info("Test that the index works with -reindex")
 
