@@ -397,6 +397,26 @@ class AssumeutxoTest(BitcoinTestFramework):
             assert_equal(loaded['coins_loaded'], SNAPSHOT_BASE_HEIGHT)
             assert_equal(loaded['base_height'], SNAPSHOT_BASE_HEIGHT)
 
+
+        normal, snapshot = n2.getchainstates()['chainstates']
+        assert_equal(normal['blocks'], START_HEIGHT)
+        assert_equal(normal.get('snapshot_blockhash'), None)
+        assert_equal(normal['validated'], True)
+        assert_equal(snapshot['blocks'], SNAPSHOT_BASE_HEIGHT)
+        assert_equal(snapshot['snapshot_blockhash'], dump_output['base_hash'])
+        assert_equal(snapshot['validated'], False)
+
+        for reindex_arg in ['-reindex=1', '-reindex-chainstate=1']:
+            self.log.info(f"Check that restarting with {reindex_arg} will delete the snapshot chainstate and load in_memory=true works")
+            self.restart_node(2, extra_args=[reindex_arg, *self.extra_args[2]])
+            assert_equal(1, len(n2.getchainstates()["chainstates"]))
+            for i in range(1, 300):
+                block = n0.getblock(n0.getblockhash(i), 0)
+                n2.submitheader(block)
+            loaded = n2.loadtxoutset(dump_output['path'], True)
+            assert_equal(loaded['coins_loaded'], SNAPSHOT_BASE_HEIGHT)
+            assert_equal(loaded['base_height'], SNAPSHOT_BASE_HEIGHT)
+
         normal, snapshot = n2.getchainstates()['chainstates']
         assert_equal(normal['blocks'], START_HEIGHT)
         assert_equal(normal.get('snapshot_blockhash'), None)
