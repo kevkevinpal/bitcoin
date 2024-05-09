@@ -2746,10 +2746,8 @@ static RPCHelpMan loadtxoutset()
         "You can find more information on this process in the `assumeutxo` design "
         "document (<https://github.com/bitcoin/bitcoin/blob/master/doc/design/assumeutxo.md>).",
         {
-            {"path",
-                RPCArg::Type::STR,
-                RPCArg::Optional::NO,
-                "path to the snapshot file. If relative, will be prefixed by datadir."},
+            {"path", RPCArg::Type::STR, RPCArg::Optional::NO, "path to the snapshot file. If relative, will be prefixed by datadir."},
+            {"in_memory", RPCArg::Type::BOOL, RPCArg::Default{false}, "should we load snapshot in memory."},
         },
         RPCResult{
             RPCResult::Type::OBJ, "", "",
@@ -2768,6 +2766,10 @@ static RPCHelpMan loadtxoutset()
     NodeContext& node = EnsureAnyNodeContext(request.context);
     ChainstateManager& chainman = EnsureChainman(node);
     fs::path path{AbsPathForConfigVal(EnsureArgsman(node), fs::u8path(request.params[0].get_str()))};
+    bool in_memory = true;
+    if (!request.params[1].isNull()) {
+        in_memory = request.params[1].get_bool();
+    }
 
     FILE* file{fsbridge::fopen(path, "rb")};
     AutoFile afile{file};
@@ -2794,7 +2796,7 @@ static RPCHelpMan loadtxoutset()
             strprintf("The base block header (%s) must appear in the headers chain. Make sure all headers are syncing, and call this RPC again.",
                       base_blockhash.ToString()));
     }
-    if (!chainman.ActivateSnapshot(afile, metadata, false)) {
+    if (!chainman.ActivateSnapshot(afile, metadata, in_memory)) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to load UTXO snapshot " + fs::PathToString(path));
     }
 
