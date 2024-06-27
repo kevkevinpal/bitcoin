@@ -93,8 +93,8 @@ static UniValue FinishTransaction(const std::shared_ptr<CWallet> pwallet, const 
     bool can_anti_fee_snipe = !options.exists("locktime");
 
     for (const CTxIn& tx_in : rawTx.vin) {
-        // Can not be FINAL for locktime to work
-        can_anti_fee_snipe &= tx_in.nSequence != CTxIn::SEQUENCE_FINAL;
+        // Checks sequence values consistent with DiscourageFeeSniping
+        can_anti_fee_snipe &= (tx_in.nSequence == CTxIn::MAX_SEQUENCE_NONFINAL || tx_in.nSequence == MAX_BIP125_RBF_SEQUENCE);
     }
 
     if (can_anti_fee_snipe) {
