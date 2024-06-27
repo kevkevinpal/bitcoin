@@ -6,6 +6,7 @@
 
 from decimal import Decimal, getcontext
 
+from test_framework.messages import SEQUENCE_FINAL
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
@@ -387,8 +388,16 @@ class SendallTest(BitcoinTestFramework):
 
         assert_greater_than(tx_from_wallet["decoded"]["locktime"], tx_from_wallet["blockheight"] - 100)
 
+        self.log.info("Testing sendall does not do anti-fee-sniping when locktime is specified")
         self.add_utxos([10,11])
         txid = self.wallet.sendall(recipients=[self.remainder_target], options={"locktime":0})["txid"]
+        assert_equal(self.wallet.gettransaction(txid=txid, verbose=True)["decoded"]["locktime"], 0)
+
+        self.log.info("Testing sendall does not do anti-fee-sniping when even one of the sequences is final")
+        self.add_utxos([10, 11])
+        utxos = self.wallet.listunspent()
+        utxos[0]["sequence"] = SEQUENCE_FINAL
+        txid = self.wallet.sendall(recipients=[self.remainder_target], inputs=utxos)["txid"]
         assert_equal(self.wallet.gettransaction(txid=txid, verbose=True)["decoded"]["locktime"], 0)
 
     # This tests needs to be the last one otherwise @cleanup will fail with "Transaction too large" error
