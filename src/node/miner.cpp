@@ -97,6 +97,7 @@ void ApplyArgsManOptions(const ArgsManager& args, BlockAssembler::Options& optio
     if (const auto blockmintxfee{args.GetArg("-blockmintxfee")}) {
         if (const auto parsed{ParseMoney(*blockmintxfee)}) options.blockMinFeeRate = CFeeRate{*parsed};
     }
+    options.print_modified_fee = args.GetBoolArg("-printpriority", options.print_modified_fee);
 }
 static BlockAssembler::Options ConfiguredOptions()
 {
@@ -276,8 +277,7 @@ void BlockAssembler::AddToBlock(const CTxMemPool& mempool, CTxMemPool::txiter it
     nFees += iter->GetFee();
     inBlock.insert(iter);
 
-    bool fPrintPriority = gArgs.GetBoolArg("-printpriority", DEFAULT_PRINTPRIORITY);
-    if (fPrintPriority) {
+    if (m_options.print_modified_fee) {
         double dPriority = iter->GetPriority(nHeight);
         CAmount dummy;
         mempool.ApplyDeltas(iter->GetTx().GetHash(), dPriority, dummy);
