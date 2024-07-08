@@ -4,7 +4,7 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test multiple RPC users."""
 
-from test_framework.test_framework import BitcoinTestFramework, SkipTest
+from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
     str_to_b64str,
@@ -133,7 +133,8 @@ class HTTPBasicsTest(BitcoinTestFramework):
         }
 
         if os.name == 'nt':
-            raise SkipTest(f"Skip cookie file permissions checks as OS detected as: {os.name=}")
+            self.log.info(f"Skip cookie file permissions checks as OS detected as: {os.name=}")
+            return
 
         self.log.info('Check cookie file permissions can be set using -rpccookieperms')
 
