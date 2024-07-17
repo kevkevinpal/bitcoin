@@ -30,6 +30,7 @@
 #include <txmempool.h>
 #include <util/any.h>
 #include <util/check.h>
+#include <util/spanparsing.h>
 #include <util/strencodings.h>
 #include <validation.h>
 
@@ -792,15 +793,17 @@ static bool rest_getutxos(const std::any& context, HTTPRequest* req, const std::
 
         for (size_t i = (fCheckMemPool) ? 1 : 0; i < uriParts.size(); i++)
         {
-            std::string strTxid = uriParts[i].substr(0, uriParts[i].find('-'));
-            std::string strOutput = uriParts[i].substr(uriParts[i].find('-')+1);
-            auto output{ToIntegral<uint32_t>(strOutput)};
+            const auto txid_out{spanparsing::Split<std::string_view>(uriParts[i], '-')};
+            if (txid_out.size() != 2) {
+                return RESTERR(req, HTTP_BAD_REQUEST, "Parse error");
+            }
+            auto output{ToIntegral<uint32_t>(txid_out.at(1))};
 
-            if (!output || !IsHex(strTxid)) {
+            if (!output || !IsHex(txid_out.at(0))) {
                 return RESTERR(req, HTTP_BAD_REQUEST, "Parse error");
             }
 
-            vOutPoints.emplace_back(TxidFromString(strTxid), *output);
+            vOutPoints.emplace_back(TxidFromString(txid_out.at(0)), *output);
         }
 
         if (vOutPoints.size() > 0)
