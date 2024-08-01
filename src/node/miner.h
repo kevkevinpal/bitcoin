@@ -169,6 +169,17 @@ public:
         // Whether to call TestBlockValidity() at the end of CreateNewBlock().
         bool test_block_validity{true};
         bool print_modified_fee{DEFAULT_PRINTPRIORITY};
+
+        BlockAssembler::Options Clamped() const;
+
+        bool operator==(const Options &rhs) const {
+            return (
+                nBlockMaxWeight == rhs.nBlockMaxWeight &&
+                nBlockMaxSize == rhs.nBlockMaxSize &&
+                blockMinFeeRate == rhs.blockMinFeeRate &&
+                test_block_validity == rhs.test_block_validity
+            );
+        }
     };
 
     explicit BlockAssembler(Chainstate& chainstate, const CTxMemPool* mempool);
