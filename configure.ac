@@ -1132,6 +1132,31 @@ else
 fi
 AM_CONDITIONAL([HAVE_IOPRIO_SYSCALL], [test "$have_ioprio_syscall" = "yes"])
 
+AC_MSG_CHECKING(for Windows file I/O priority functions)
+AC_COMPILE_IFELSE([
+  AC_LANG_PROGRAM([[
+    #define _WIN32_WINNT 0x0600
+    #include <windows.h>
+    #include <io.h>
+    #include <stdio.h>
+  ]],[[
+    static const FILE_IO_PRIORITY_HINT_INFO priorityHint = {
+        .PriorityHint = IoPriorityHintLow,
+    };
+    FILE * const F = fopen("test", "r");
+    HANDLE hFile = _get_osfhandle(_fileno(F));
+
+    SetFileInformationByHandle(hFile, FileIoPriorityHintInfo, &priorityHint, sizeof(priorityHint));
+  ]])
+],[
+  have_windows_ioprio=yes
+  AC_DEFINE(HAVE_WINDOWS_IOPRIO,1,[Define this symbol if you have Windows I/O priority functions])
+],[
+  have_windows_ioprio=no
+])
+AC_MSG_RESULT($have_windows_ioprio)
+AM_CONDITIONAL([HAVE_WINDOWS_IOPRIO], [test "$have_windows_ioprio" = "yes"])
+
 if test "$use_thread_local" = "yes" || test "$use_thread_local" = "auto"; then
   TEMP_LDFLAGS="$LDFLAGS"
   LDFLAGS="$TEMP_LDFLAGS $PTHREAD_CFLAGS"
