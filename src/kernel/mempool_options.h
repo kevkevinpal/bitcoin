@@ -14,6 +14,7 @@
 #include <optional>
 
 enum class RBFPolicy { Never, OptIn, Always };
+enum class TRUCPolicy { Reject, Accept, Enforce };
 
 /** Default for -maxmempool, maximum megabytes of mempool memory usage */
 static constexpr unsigned int DEFAULT_MAX_MEMPOOL_SIZE_MB{300};
@@ -23,6 +24,8 @@ static constexpr unsigned int DEFAULT_BLOCKSONLY_MAX_MEMPOOL_SIZE_MB{5};
 static constexpr unsigned int DEFAULT_MEMPOOL_EXPIRY_HOURS{336};
 /** Default for -mempoolreplacement; must update docs in init.cpp manually */
 static constexpr RBFPolicy DEFAULT_MEMPOOL_RBF_POLICY{RBFPolicy::OptIn};
+/** Default for -mempooltruc; must update docs in init.cpp manually */
+static constexpr TRUCPolicy DEFAULT_MEMPOOL_TRUC_POLICY{TRUCPolicy::Reject};
 /** Whether to fall back to legacy V1 serialization when writing mempool.dat */
 static constexpr bool DEFAULT_PERSIST_V1_DAT{false};
 /** Default for -acceptnonstdtxn */
@@ -56,6 +59,7 @@ struct MemPoolOptions {
     bool permit_bare_multisig{DEFAULT_PERMIT_BAREMULTISIG};
     bool require_standard{true};
     RBFPolicy rbf_policy{DEFAULT_MEMPOOL_RBF_POLICY};
+    TRUCPolicy truc_policy{DEFAULT_MEMPOOL_TRUC_POLICY};
     bool persist_v1_dat{DEFAULT_PERSIST_V1_DAT};
     MemPoolLimits limits{};
 };

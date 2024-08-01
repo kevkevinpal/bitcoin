@@ -738,6 +738,10 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     if (tx.IsCoinBase())
         return state.Invalid(TxValidationResult::TX_CONSENSUS, "coinbase");
 
+    if (tx.nVersion == 3 && m_pool.m_truc_policy == TRUCPolicy::Reject) {
+        return state.Invalid(TxValidationResult::TX_NOT_STANDARD, "version");
+    }
+
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     std::string reason;
     if (m_pool.m_require_standard && !IsStandardTx(tx, m_pool.m_max_datacarrier_bytes, m_pool.m_permit_bare_multisig, m_pool.m_dust_relay_feerate, reason, ignore_rejects)) {
@@ -906,7 +910,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     // method of ensuring the tx remains bumped. For example, the fee-bumping child could disappear
     // due to a replacement.
     // The only exception is v3 transactions.
-    if (ws.m_ptx->nVersion != 3 && ws.m_modified_fees < m_pool.m_min_relay_feerate.GetFee(ws.m_vsize) && !args.m_ignore_rejects.count(rejectmsg_mempoolfull)) {
+    if ((ws.m_ptx->nVersion != 3 || m_pool.m_truc_policy != TRUCPolicy::Enforce) && ws.m_modified_fees < m_pool.m_min_relay_feerate.GetFee(ws.m_vsize) && !args.m_ignore_rejects.count(rejectmsg_mempoolfull)) {
         // Even though this is a fee-related failure, this result is TX_MEMPOOL_POLICY, not
         // TX_RECONSIDERABLE, because it cannot be bypassed using package validation.
         return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "min relay fee not met",
@@ -986,7 +990,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
             .descendant_size_vbytes = maybe_rbf_limits.descendant_size_vbytes + EXTRA_DESCENDANT_TX_SIZE_LIMIT,
         };
         const auto error_message{util::ErrorString(ancestors).original};
-        if (ws.m_vsize > EXTRA_DESCENDANT_TX_SIZE_LIMIT || ws.m_ptx->nVersion == 3) {
+        if (ws.m_vsize > EXTRA_DESCENDANT_TX_SIZE_LIMIT || (ws.m_ptx->nVersion == 3 && m_pool.m_truc_policy == TRUCPolicy::Enforce)) {
             return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "too-long-mempool-chain", error_message);
         }
         ancestors = m_pool.CalculateMemPoolAncestors(*entry, cpfp_carve_out_limits);
@@ -997,6 +1001,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     // Even though just checking direct mempool parents for inheritance would be sufficient, we
     // check using the full ancestor set here because it's more convenient to use what we have
     // already calculated.
+    if (m_pool.m_truc_policy == TRUCPolicy::Enforce) {
     if (const auto err{SingleV3Checks(ws.m_ptx, "truc-", reason, ignore_rejects, ws.m_ancestors, ws.m_conflicts, ws.m_vsize)}) {
         // Disabled within package validation.
         if (err->second != nullptr && args.m_allow_replacement) {
@@ -1014,7 +1019,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         } else {
             return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, reason, err->first);
         }
-    }
+    }}
 
     // A transaction that spends outputs that would be replaced by it is invalid. Now
     // that we have the set of all ancestors we can detect this
@@ -1391,13 +1396,14 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptMultipleTransactions(const std::
 
     // At this point we have all in-mempool ancestors, and we know every transaction's vsize.
     // Run the v3 checks on the package.
+    if (m_pool.m_truc_policy == TRUCPolicy::Enforce) {
     std::string reason;
     for (Workspace& ws : workspaces) {
         if (auto err{PackageV3Checks(ws.m_ptx, ws.m_vsize, "truc-", reason, args.m_ignore_rejects, txns, ws.m_ancestors)}) {
             package_state.Invalid(PackageValidationResult::PCKG_POLICY, reason, err.value());
             return PackageMempoolAcceptResult(package_state, {});
         }
-    }
+    }}
 
     // Transactions must meet two minimum feerates: the mempool minimum fee and min relay fee.
     // For transactions consisting of exactly one child and its parents, it suffices to use the

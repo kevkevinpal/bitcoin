@@ -662,6 +662,7 @@ void SetupServerArgs(ArgsManager& argsman)
                    ArgsManager::ALLOW_ANY, OptionsCategory::NODE_RELAY);
     argsman.AddArg("-mempoolfullrbf", strprintf("Accept transaction replace-by-fee without requiring replaceability signaling (default: %u)", (DEFAULT_MEMPOOL_RBF_POLICY == RBFPolicy::Always)), ArgsManager::ALLOW_ANY, OptionsCategory::NODE_RELAY);
     argsman.AddArg("-mempoolreplacement", strprintf("Set to 0 to disable RBF entirely, \"fee,optin\" to honour RBF opt-out signal, or \"fee,-optin\" to always RBF aka full RBF (default: %s)", "fee,optin"), ArgsManager::ALLOW_ANY, OptionsCategory::NODE_RELAY);
+    argsman.AddArg("-mempooltruc", strprintf("Behaviour for transactions requesting TRUC limits: \"reject\" the transactions entirely, \"accept\" them just like any other, or \"enforce\" to impose their requested restrictions (default: %s)", "reject"), ArgsManager::ALLOW_ANY, OptionsCategory::NODE_RELAY);
     argsman.AddArg("-permitbaremultisig", strprintf("Relay non-P2SH multisig (default: %u)", DEFAULT_PERMIT_BAREMULTISIG), ArgsManager::ALLOW_ANY,
                    OptionsCategory::NODE_RELAY);
     argsman.AddArg("-minrelaytxfee=<amt>", strprintf("Fees (in %s/kvB) smaller than this are considered zero fee for relaying, mining and transaction creation (default: %s)",
@@ -760,6 +761,10 @@ static bool AppInitServers(NodeContext& node)
 // Parameter interaction based on rules
 void InitParameterInteraction(ArgsManager& args)
 {
+    if (args.GetBoolArg("-acceptnonstdtxn", DEFAULT_ACCEPT_NON_STD_TXN) && (!args.IsArgSet("-mempooltruc")) && DEFAULT_MEMPOOL_TRUC_POLICY == TRUCPolicy::Reject) {
+        args.SoftSetArg("-mempooltruc", "enforce");
+    }
+
     // when specifying an explicit binding address, you want to listen on it
     // even when -connect or -proxy is specified
     if (args.IsArgSet("-bind")) {

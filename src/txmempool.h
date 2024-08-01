@@ -448,6 +448,7 @@ public:
     const std::optional<unsigned> m_max_datacarrier_bytes;
     const bool m_require_standard;
     const RBFPolicy m_rbf_policy;
+    const TRUCPolicy m_truc_policy;
     const bool m_persist_v1_dat;
 
     const Limits m_limits;
