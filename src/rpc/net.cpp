@@ -128,8 +128,8 @@ static RPCHelpMan getpeerinfo()
                     {RPCResult::Type::STR, "addrbind", /*optional=*/true, "(ip:port) Bind address of the connection to the peer"},
                     {RPCResult::Type::STR, "addrlocal", /*optional=*/true, "(ip:port) Local address as reported by the peer"},
                     {RPCResult::Type::STR, "network", "Network (" + Join(GetNetworkNames(/*append_unroutable=*/true), ", ") + ")"},
-                    {RPCResult::Type::NUM, "mapped_as", /*optional=*/true, "The AS in the BGP route to the peer used for diversifying\n"
-                                                        "peer selection (only available if the asmap config flag is set)"},
+                    {RPCResult::Type::NUM, "mapped_as", /*optional=*/true, "Mapped AS (Autonomous System) number in the BGP route to the peer, used for diversifying\n"
+                                                        "peer selection (only displayed if the -asmap config option is set)"},
                     {RPCResult::Type::STR_HEX, "services", "The services offered"},
                     {RPCResult::Type::ARR, "servicesnames", "the services offered, in human-readable form",
                     {
@@ -1101,20 +1101,28 @@ static RPCHelpMan getaddrmaninfo()
     };
 }
 
-UniValue AddrmanEntryToJSON(const AddrInfo& info)
+UniValue AddrmanEntryToJSON(const AddrInfo& info, const CConnman& connman)
 {
     UniValue ret(UniValue::VOBJ);
     ret.pushKV("address", info.ToStringAddr());
+    const uint32_t mapped_as{connman.GetMappedAS(info)};
+    if (mapped_as) {
+        ret.pushKV("mapped_as", mapped_as);
+    }
     ret.pushKV("port", info.GetPort());
     ret.pushKV("services", (uint64_t)info.nServices);
     ret.pushKV("time", int64_t{TicksSinceEpoch<std::chrono::seconds>(info.nTime)});
     ret.pushKV("network", GetNetworkName(info.GetNetClass()));
     ret.pushKV("source", info.source.ToStringAddr());
     ret.pushKV("source_network", GetNetworkName(info.source.GetNetClass()));
+    const uint32_t source_mapped_as{connman.GetMappedAS(info.source)};
+    if (source_mapped_as) {
+        ret.pushKV("source_mapped_as", source_mapped_as);
+    }
     return ret;
 }
 
-UniValue AddrmanTableToJSON(const std::vector<std::pair<AddrInfo, AddressPosition>>& tableInfos)
+UniValue AddrmanTableToJSON(const std::vector<std::pair<AddrInfo, AddressPosition>>& tableInfos, const CConnman& connman)
 {
     UniValue table(UniValue::VOBJ);
     for (const auto& e : tableInfos) {
@@ -1125,7 +1133,7 @@ UniValue AddrmanTableToJSON(const std::vector<std::pair<AddrInfo, AddressPositio
         // Address manager tables have unique entries so there is no advantage
         // in using UniValue::pushKV, which checks if the key already exists
         // in O(N). UniValue::pushKVEnd is used instead which currently is O(1).
-        table.pushKVEnd(key.str(), AddrmanEntryToJSON(info));
+        table.pushKVEnd(key.str(), AddrmanEntryToJSON(info, connman));
     }
     return table;
 }
@@ -1141,12 +1149,14 @@ static RPCHelpMan getrawaddrman()
                 {RPCResult::Type::OBJ_DYN, "table", "buckets with addresses in the address manager table ( new, tried )", {
                     {RPCResult::Type::OBJ, "bucket/position", "the location in the address manager table (<bucket>/<position>)", {
                         {RPCResult::Type::STR, "address", "The address of the node"},
+                        {RPCResult::Type::NUM, "mapped_as", /*optional=*/true, "Mapped AS (Autonomous System) number in the BGP route to the peer, used for diversifying peer selection (only displayed if the -asmap config option is set)"},
                         {RPCResult::Type::NUM, "port", "The port number of the node"},
                         {RPCResult::Type::STR, "network", "The network (" + Join(GetNetworkNames(), ", ") + ") of the address"},
                         {RPCResult::Type::NUM, "services", "The services offered by the node"},
                         {RPCResult::Type::NUM_TIME, "time", "The " + UNIX_EPOCH_TIME + " when the node was last seen"},
                         {RPCResult::Type::STR, "source", "The address that relayed the address to us"},
                         {RPCResult::Type::STR, "source_network", "The network (" + Join(GetNetworkNames(), ", ") + ") of the source address"},
+                        {RPCResult::Type::NUM, "source_mapped_as", /*optional=*/true, "Mapped AS (Autonomous System) number in the BGP route to the peer's source, used for diversifying peer selection (only displayed if the -asmap config option is set)"}
                     }}
                 }}
             }
@@ -1157,10 +1167,12 @@ static RPCHelpMan getrawaddrman()
         },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
             AddrMan& addrman = EnsureAnyAddrman(request.context);
+            NodeContext& node_context = EnsureAnyNodeContext(request.context);
+            CConnman& connman = EnsureConnman(node_context);
 
             UniValue ret(UniValue::VOBJ);
-            ret.pushKV("new", AddrmanTableToJSON(addrman.GetEntries(false)));
-            ret.pushKV("tried", AddrmanTableToJSON(addrman.GetEntries(true)));
+            ret.pushKV("new", AddrmanTableToJSON(addrman.GetEntries(false), connman));
+            ret.pushKV("tried", AddrmanTableToJSON(addrman.GetEntries(true), connman));
             return ret;
         },
     };
