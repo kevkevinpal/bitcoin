@@ -11,6 +11,7 @@
 
 #include <exception>
 #include <fstream>
+#include <set>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -18,6 +19,24 @@
 namespace wallet {
 std::vector<fs::path> ListDatabases(const fs::path& wallet_dir)
 {
+    const fs::path& data_dir = gArgs.GetDataDirNet();
+    const fs::path& blocks_dir = gArgs.GetBlocksDirPath();
+
+    // Here we place the top level dirs we want to skip in case walletdir is datadir or blocksdir
+    // Those directories are referenced in doc/files.md
+    const std::set<fs::path> ignore_paths = {
+                                        blocks_dir,
+                                        data_dir / "blktree",
+                                        data_dir / "blocks",
+                                        data_dir / "chainstate",
+                                        data_dir / "coins",
+                                        data_dir / "database",
+                                        data_dir / "indexes",
+                                        data_dir / "regtest",
+                                        data_dir / "signet",
+                                        data_dir / "testnet3"
+                                        };
+
     std::vector<fs::path> paths;
     std::error_code ec;
 
@@ -29,6 +48,12 @@ std::vector<fs::path> ListDatabases(const fs::path& wallet_dir)
             } else {
                 LogPrintf("%s: %s %s\n", __func__, ec.message(), fs::PathToString(it->path()));
             }
+            continue;
+        }
+
+        // We don't want to iterate through those special node dirs
+        if (ignore_paths.count(it->path())) {
+            it.disable_recursion_pending();
             continue;
         }
 
