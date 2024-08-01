@@ -104,8 +104,8 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nTimeout = 1628640000; // August 11th, 2021
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 709632; // Approximately November 12th, 2021
 
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000063c4ebd298db40af57541800");
-        consensus.defaultAssumeValid = uint256S("0x000000000000000000026811d149d4d261995ec5b3f64f439a0a10e1a464af9a"); // 824000
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000086aa99a97e415c3736a51796");
+        consensus.defaultAssumeValid = uint256S("0x0000000000000000000233ea80aa10d38aa4486cd7033fffc2c4df556d0b9138"); // 855000
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -118,8 +118,8 @@ public:
         pchMessageStart[3] = 0xd9;
         nDefaultPort = 8333;
         nPruneAfterHeight = 100000;
-        m_assumed_blockchain_size = 600;
-        m_assumed_chain_state_size = 10;
+        m_assumed_blockchain_size = 700;
+        m_assumed_chain_state_size = 13;
 
         genesis = CreateGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
@@ -170,6 +170,30 @@ public:
                 {250000, uint256S("0x000000000000003887df1f29024b06fc2200b55f8af8f35453d7be294df2d214")},
                 {279000, uint256S("0x0000000000000001ae8c72a0b0c301f67e3afca10e819efa9041e458e9bd7e40")},
                 {295000, uint256S("0x00000000000000004d9b4ef50f0f9d686fd69db2e03af35a100370c64632a983")},
+                {393216, uint256S("0x00000000000000000390df7d2bdc06b9fcb260b39e3fb15b4bc9f62572553924")},
+                {421888, uint256S("0x000000000000000004b232ad9492d0729d7f9d6737399ffcdaac1c8160db5ef6")},
+                {438784, uint256S("0x0000000000000000040d6ef667d7a52caf93d8e0d1e40fd7155c787b42667179")},
+                {451840, uint256S("0x0000000000000000029103c8ade7786e7379623465c72d71d84624eb9c159bea")},
+                {469766, uint256S("0x000000000000000000130b2bd812c6a7ae9c02a74fc111806b1dd11e8975da45")},
+                {481824, uint256S("0x0000000000000000001c8018d9cb3b742ef25114f27563e3fc4a1902167f9893")},
+                {514048, uint256S("0x00000000000000000022fe630be397a62c58972bb81f0a2d1ae8c968511a4659")},
+                {553472, uint256S("0x0000000000000000000e06b6698a4f65ab9915f24b23ca2f9d1abf30cc3e9173")},
+                {571392, uint256S("0x00000000000000000019c18b43077775fc299a6646ab0e9dbbd5770bf6ca392d")},
+                {596000, uint256S("0x0000000000000000000706f93dc673ca366c810f317e7cfe8d951c0107b65223")},
+                {601723, uint256S("0x000000000000000000009837f74796532b21d8ccf7def3dcfcb45aa92cd86b9e")},
+                {617056, uint256S("0x0000000000000000000ca51b293fb2be2fbaf1acc76dcbbbff7e4d7796380b9e")},
+                {632549, uint256S("0x00000000000000000001bae1b2b73ec3fde475c1ed7fdd382c2c49860ec19920")},
+                {643700, uint256S("0x00000000000000000002959e9b44507120453344794df09bd1276eb325ed7110")},
+                {667811, uint256S("0x00000000000000000007888a9d01313d69d6335df46ea33e875ee6832670c596")},
+                {688888, uint256S("0x0000000000000000000e1e3bd783ce0de7b0cdabf2034723595dbcd5a28cf831")},
+                {704256, uint256S("0x0000000000000000000465f5acfcd603337994261a4d67a647cb49866c98b538")},
+                {714000, uint256S("0x0000000000000000000184f9b9da75c3ab764438f4f3ecd766637648a3a44d0d")},
+                {737232, uint256S("0x0000000000000000000709881cc8d33f84815fe8ea1baad9889042146b4d3042")},
+                {803584, uint256S("0x000000000000000000003d97a46dbbb4cca4b3e23c39c446df75cfe726163bb5")},
+                {832080, uint256S("0x00000000000000000003349bda23ed5efc98145c10620c247ec93896ac249e22")},
+                {843264, uint256S("0x0000000000000000000101209b4ab3570862dc3fac8633eb62938a541c55a2ff")},
+                {846679, uint256S("0x000000000000000000032b91acdaaf16f8c40d46afeb835c3ac604860f905d56")},
+                {855000, uint256S("0x0000000000000000000233ea80aa10d38aa4486cd7033fffc2c4df556d0b9138")},
             }
         };
 
@@ -178,10 +202,10 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data from RPC: getchaintxstats 4096 000000000000000000026811d149d4d261995ec5b3f64f439a0a10e1a464af9a
-            .nTime    = 1704194835,
-            .nTxCount = 946728933,
-            .dTxRate  = 6.569290261471664,
+            // Data from RPC: getchaintxstats 4096 00000000000000000000d9f8d860b1df736b5b054473a3dd09d2ef169ae88566
+            .nTime    = 1722628127,
+            .nTxCount = 1053364946,
+            .dTxRate  = 7.335563187419366,
         };
     }
 };
