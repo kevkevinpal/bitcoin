@@ -18,6 +18,14 @@
 #include <fcntl.h>
 #ifdef FD_CLOEXEC
 #include <unistd.h>
+// Boost 1.77 requires the following workaround.
+// See: https://github.com/boostorg/process/issues/213
+#include <algorithm>
+#if defined(WIN32) && !defined(__kernel_entry)
+// Boost 1.71-1.77 requires the following workaround for compatibility with mingw-w64 compiler.
+// See: https://github.com/bitcoin/bitcoin/pull/22348
+#define __kernel_entry
+#endif
 #if defined(__GNUC__)
 // Boost 1.78 requires the following workaround.
 // See: https://github.com/boostorg/process/issues/235
