@@ -46,6 +46,7 @@
 #include <script/script.h>
 #include <script/sigcache.h>
 #include <signet.h>
+#include <stats/stats.h>
 #include <tinyformat.h>
 #include <txdb.h>
 #include <txmempool.h>
@@ -1240,6 +1241,8 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
     AssertLockHeld(cs_main);
     LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
 
+    const CFeeRate mempool_min_fee_rate = m_pool.GetMinFee();
+
     Workspace ws(ptx);
     const std::vector<Wtxid> single_wtxid{ws.m_ptx->GetWitnessHash()};
 
@@ -1280,6 +1283,9 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
                                                    IsCurrentForFeeEstimation(m_active_chainstate),
                                                    m_pool.HasNoInputsOf(tx));
     GetMainSignals().TransactionAddedToMempool(tx_info, m_pool.GetAndIncrementSequence());
+
+    // update mempool stats cache
+    CStats::DefaultStats()->addMempoolSample(m_pool.size(), m_pool.DynamicMemoryUsage(), mempool_min_fee_rate.GetFeePerK());
 
     return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees,
                                         effective_feerate, single_wtxid);
@@ -2856,6 +2862,12 @@ bool Chainstate::DisconnectTip(BlockValidationState& state, DisconnectedBlockTra
     // Let wallets know transactions went from 1-confirmed to
     // 0-confirmed or conflicted:
     GetMainSignals().BlockDisconnected(pblock, pindexDelete);
+
+    if (m_mempool) {
+        // add mempool stats sample
+        CStats::DefaultStats()->addMempoolSample(m_mempool->size(), m_mempool->DynamicMemoryUsage(), m_mempool->GetMinFee().GetFeePerK());
+    }
+
     return true;
 }
 
@@ -2980,6 +2992,11 @@ bool Chainstate::ConnectTip(BlockValidationState& state, CBlockIndex* pindexNew,
     // Update m_chain & related variables.
     m_chain.SetTip(*pindexNew);
     UpdateTip(pindexNew);
+
+    if (m_mempool) {
+        // add mempool stats sample
+        CStats::DefaultStats()->addMempoolSample(m_mempool->size(), m_mempool->DynamicMemoryUsage(), m_mempool->GetMinFee().GetFeePerK());
+    }
 
     const auto time_6{SteadyClock::now()};
     time_post_connect += time_6 - time_5;
