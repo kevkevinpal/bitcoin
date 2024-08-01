@@ -13,6 +13,7 @@
 
 class CBlock;
 class CBlockHeader;
+class CFeeRate;
 class CScript;
 class CTransaction;
 struct CMutableTransaction;
@@ -50,6 +51,7 @@ bool ParseHashStr(const std::string& strHex, uint256& result);
 
 // core_write.cpp
 UniValue ValueFromAmount(const CAmount amount);
+UniValue ValueFromFeeRate(const CFeeRate& fee_rate);
 std::string FormatScript(const CScript& script);
 std::string EncodeHexTx(const CTransaction& tx);
 std::string SighashToStr(unsigned char sighash_type);
