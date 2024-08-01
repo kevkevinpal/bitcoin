@@ -170,8 +170,10 @@ BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 G
     BOOST_CHECK_EQUAL(TmpL.ToString(), "0000000000000000000000000000000000000000000000000000000000000021");
     TmpL.SetHex(R2L.ToString());   BOOST_CHECK_EQUAL(TmpL, R2L);
     TmpL.SetHex(ZeroL.ToString()); BOOST_CHECK_EQUAL(TmpL, uint256());
+    BOOST_CHECK_EQUAL(uint256::FromHex(R2L.ToString()).value(), R2L);
+    BOOST_CHECK_EQUAL(uint256::FromHex(ZeroL.ToString()).value(), uint256());
 
-    TmpL.SetHex(R1L.ToString());
+    TmpL = uint256::FromHex(R1L.ToString()).value();
     BOOST_CHECK_EQUAL_COLLECTIONS(R1L.begin(), R1L.end(), R1Array, R1Array + R1L.size());
     BOOST_CHECK_EQUAL_COLLECTIONS(TmpL.begin(), TmpL.end(), R1Array, R1Array + TmpL.size());
     BOOST_CHECK_EQUAL_COLLECTIONS(R2L.begin(), R2L.end(), R2Array, R2Array + R2L.size());
@@ -216,8 +218,10 @@ BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 G
     BOOST_CHECK_EQUAL(TmpS, R1S);
     TmpS.SetHex(R2S.ToString());   BOOST_CHECK_EQUAL(TmpS, R2S);
     TmpS.SetHex(ZeroS.ToString()); BOOST_CHECK_EQUAL(TmpS, uint160());
+    BOOST_CHECK_EQUAL(uint160::FromHex(R2S.ToString()).value(), R2S);
+    BOOST_CHECK_EQUAL(uint160::FromHex(ZeroS.ToString()).value(), uint160());
 
-    TmpS.SetHex(R1S.ToString());
+    TmpS = uint160::FromHex(R1S.ToString()).value();
     BOOST_CHECK_EQUAL_COLLECTIONS(R1S.begin(), R1S.end(), R1Array, R1Array + R1S.size());
     BOOST_CHECK_EQUAL_COLLECTIONS(TmpS.begin(), TmpS.end(), R1Array, R1Array + TmpS.size());
     BOOST_CHECK_EQUAL_COLLECTIONS(R2S.begin(), R2S.end(), R2Array, R2Array + R2S.size());
