@@ -1247,6 +1247,8 @@ public:
     //! that peer during `net_processing.cpp:PushNodeVersion()`.
     ServiceFlags GetLocalServices() const;
 
+    //! set the max outbound target in bytes
+    void SetMaxOutboundTarget(uint64_t limit) EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex);
     uint64_t GetMaxOutboundTarget() const EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex);
     std::chrono::seconds GetMaxOutboundTimeframe() const;
 
