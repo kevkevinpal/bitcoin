@@ -85,6 +85,18 @@ UrlDecodeFn* const URL_DECODE = nullptr;
 /** Random context to get unique temp data dirs. Separate from g_insecure_rand_ctx, which can be seeded from a const env var */
 static FastRandomContext g_insecure_rand_ctx_temp_path;
 
+std::ostream& operator<<(std::ostream& os, const arith_uint256& num)
+{
+    os << ArithToUint256(num).ToString();
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const uint160& num)
+{
+    os << num.ToString();
+    return os;
+}
+
 std::ostream& operator<<(std::ostream& os, const uint256& num)
 {
     os << num.ToString();
