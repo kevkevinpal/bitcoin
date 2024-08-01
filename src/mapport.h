@@ -5,9 +5,9 @@
 #ifndef BITCOIN_MAPPORT_H
 #define BITCOIN_MAPPORT_H
 
-static constexpr bool DEFAULT_UPNP = true;
+static constexpr bool DEFAULT_UPNP = false;
 
-static constexpr bool DEFAULT_NATPMP = true;
+static constexpr bool DEFAULT_NATPMP = false;
 
 enum MapPortProtoFlag : unsigned int {
     NONE = 0x00,
