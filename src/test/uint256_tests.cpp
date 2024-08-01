@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE( comparison ) // <= >= < >
                    uint256S("1000000000000000000000000000000000000000000000000000000000000002"));
 }
 
-BOOST_AUTO_TEST_CASE(methods) // GetHex SetHex FromHex begin() end() size() GetLow64 GetSerializeSize, Serialize, Unserialize
+BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 GetSerializeSize, Serialize, Unserialize
 {
     BOOST_CHECK_EQUAL(R1L.GetHex(), R1L.ToString());
     BOOST_CHECK_EQUAL(R2L.GetHex(), R2L.ToString());
@@ -168,6 +168,8 @@ BOOST_AUTO_TEST_CASE(methods) // GetHex SetHex FromHex begin() end() size() GetL
     // Verify previous values don't persist when setting to truncated string.
     TmpL.SetHex("21");
     BOOST_CHECK_EQUAL(TmpL.ToString(), "0000000000000000000000000000000000000000000000000000000000000021");
+    TmpL.SetHex(R2L.ToString());   BOOST_CHECK_EQUAL(TmpL, R2L);
+    TmpL.SetHex(ZeroL.ToString()); BOOST_CHECK_EQUAL(TmpL, uint256());
     BOOST_CHECK_EQUAL(uint256::FromHex(R2L.ToString()).value(), R2L);
     BOOST_CHECK_EQUAL(uint256::FromHex(ZeroL.ToString()).value(), uint256());
 
@@ -214,6 +216,8 @@ BOOST_AUTO_TEST_CASE(methods) // GetHex SetHex FromHex begin() end() size() GetL
     BOOST_CHECK_EQUAL(MaxS.GetHex(), MaxS.ToString());
     uint160 TmpS(R1S);
     BOOST_CHECK_EQUAL(TmpS, R1S);
+    TmpS.SetHex(R2S.ToString());   BOOST_CHECK_EQUAL(TmpS, R2S);
+    TmpS.SetHex(ZeroS.ToString()); BOOST_CHECK_EQUAL(TmpS, uint160());
     BOOST_CHECK_EQUAL(uint160::FromHex(R2S.ToString()).value(), R2S);
     BOOST_CHECK_EQUAL(uint160::FromHex(ZeroS.ToString()).value(), uint160());
 

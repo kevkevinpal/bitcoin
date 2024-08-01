@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-present The Bitcoin Core developers
+// Copyright (c) 2009-2022 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -61,7 +61,6 @@ public:
 
     // Hex string representations are little-endian.
     std::string GetHex() const;
-    /** Unlike FromHex this accepts any invalid input, thus it is fragile and deprecated */
     void SetHex(std::string_view str);
     std::string ToString() const;
 
@@ -135,7 +134,8 @@ public:
 };
 
 /* uint256 from std::string_view, treated as little-endian.
- * DEPRECATED. Unlike FromHex this accepts any invalid input, thus it is fragile and deprecated!
+ * This is not a uint256 constructor because of historical fears of uint256(0)
+ * resolving to a NULL string and crashing.
  */
 inline uint256 uint256S(std::string_view str)
 {
