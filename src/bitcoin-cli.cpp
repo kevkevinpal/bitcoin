@@ -14,6 +14,7 @@
 #include <common/url.h>
 #include <compat/compat.h>
 #include <compat/stdin.h>
+#include <consensus/amount.h>
 #include <policy/feerate.h>
 #include <rpc/client.h>
 #include <rpc/mining.h>
@@ -89,7 +90,7 @@ static void SetupCliArgs(ArgsManager& argsman)
                              DEFAULT_NBLOCKS, DEFAULT_MAX_TRIES),
                    ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-addrinfo", "Get the number of addresses known to the node, per network and total, after filtering for quality and recency. The total number of addresses known to the node may be higher.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
-    argsman.AddArg("-getinfo", "Get general information from the remote server, including the balances of each loaded wallet when in multiwallet mode. Note that -getinfo is the combined result of several RPCs (getnetworkinfo, getblockchaininfo, getwalletinfo, getbalances, and in multiwallet mode, listwallets), each with potentially different state.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    argsman.AddArg("-getinfo", "Get general information from the remote server, including the total balance and the balances of each loaded wallet when in multiwallet mode. Note that -getinfo is the combined result of several RPCs (getnetworkinfo, getblockchaininfo, getwalletinfo, getbalances, and in multiwallet mode, listwallets), each with potentially different state.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-netinfo", "Get network peer connection information from the remote server. An optional integer argument from 0 to 4 can be passed for different peers listings (default: 0). Pass \"help\" for detailed help documentation.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
 
     SetupChainParamsBaseOptions(argsman);
@@ -963,9 +964,29 @@ static void ParseError(const UniValue& error, std::string& strPrint, int& nRet)
     nRet = abs(error["code"].getInt<int>());
 }
 
+static CAmount AmountFromValue(const UniValue& value)
+{
+    CAmount amount{0};
+    if (!ParseFixedPoint(value.getValStr(), 8, &amount))
+        throw std::runtime_error("Invalid amount");
+    if (!MoneyRange(amount))
+        throw std::runtime_error("Amount out of range");
+    return amount;
+}
+
+static UniValue ValueFromAmount(const CAmount& amount)
+{
+    bool sign{amount < 0};
+    int64_t n_abs{sign ? -amount : amount};
+    int64_t quotient{n_abs / COIN};
+    int64_t remainder{n_abs % COIN};
+    return UniValue(UniValue::VNUM, strprintf("%s%d.%08d", sign ? "-" : "", quotient, remainder));
+}
+
 /**
- * GetWalletBalances calls listwallets; if more than one wallet is loaded, it then
- * fetches mine.trusted balances for each loaded wallet and pushes them to `result`.
+ * GetWalletBalances calls listwallets; if more than one wallet is loaded, it
+ * then fetches mine.trusted balances for each loaded wallet and pushes all the
+ * balances, followed by the total balance, to `result`.
  *
  * @param result  Reference to UniValue object the wallet names and balances are pushed to.
  */
@@ -978,13 +999,17 @@ static void GetWalletBalances(UniValue& result)
     if (wallets.size() <= 1) return;
 
     UniValue balances(UniValue::VOBJ);
+    CAmount total_balance{0};
     for (const UniValue& wallet : wallets.getValues()) {
         const std::string& wallet_name = wallet.get_str();
         const UniValue getbalances = ConnectAndCallRPC(&rh, "getbalances", /* args=*/{}, wallet_name);
+        if (!getbalances.find_value("error").isNull()) continue;
         const UniValue& balance = getbalances.find_value("result")["mine"]["trusted"];
+        total_balance += AmountFromValue(balance);
         balances.pushKV(wallet_name, balance);
     }
     result.pushKV("balances", std::move(balances));
+    result.pushKV("total_balance", ValueFromAmount(total_balance));
 }
 
 /**
@@ -1127,6 +1152,7 @@ static void ParseGetInfoResult(UniValue& result)
                                        wallet.empty() ? "\"\"" : wallet);
         }
         result_string += "\n";
+        result_string += strprintf("%sTotal balance:%s %s\n\n", CYAN, RESET, result["total_balance"].getValStr());
     }
 
     const std::string warnings{result["warnings"].getValStr()};
