@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+# Copyright (c) 2023 Luke Dashjr
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+import sys
+
+with open(sys.argv[1], "r+b") as dmg:
+    # Ensure HFS+ header is where we expect it
+    dmg.seek(0x10400)
+    assert dmg.read(4) == b'\x48\x2b\0\x04'
+
+    # Set Finder info to open directory ID 2 when mounted
+    dmg.seek(0x10458)
+    dmg.write(b'\0\0\0\x02')

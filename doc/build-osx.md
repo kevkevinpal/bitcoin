@@ -177,8 +177,14 @@ brew install python
 
 #### Deploy Dependencies
 
-You can deploy a `.zip` containing the Bitcoin Core application using `make deploy`.
+You can deploy a `.dmg` and `.zip` containing the Bitcoin Core application using `make deploy`.
 It is required that you have `python` installed.
+
+Ensuring that `python` is installed, you can install the deploy dependencies by running the following commands in your terminal:
+
+``` bash
+pip3 install ds_store mac_alias
+```
 
 ## Building Bitcoin Core
 
@@ -237,7 +243,7 @@ make check  # Run tests if Python 3 is available
 
 ### 3. Deploy (optional)
 
-You can also create a  `.zip` containing the `.app` bundle by running the following command:
+You can also create a  `.dmg` and `.zip` containing the `.app` bundle by running the following command:
 
 ``` bash
 make deploy
