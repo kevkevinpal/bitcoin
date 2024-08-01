@@ -529,7 +529,6 @@ inspecting signatures in Mach-O binaries.")
         autoconf-2.71
         automake
         pkg-config
-        bison
         imagemagick
         libicns
         librsvg-2.40
@@ -551,7 +550,8 @@ inspecting signatures in Mach-O binaries.")
                  nss-certs
                  osslsigncode))
           ((string-contains target "-linux-")
-           (list (make-bitcoin-cross-toolchain target)))
+           (list bison
+                 (make-bitcoin-cross-toolchain target)))
           ((string-contains target "darwin")
            (list clang-toolchain-17 binutils cmake-minimal xorriso python-signapple zip))
           (else '())))))
