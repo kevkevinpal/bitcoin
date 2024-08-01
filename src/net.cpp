@@ -588,6 +588,7 @@ void CConnman::AddWhitelistPermissionFlags(NetPermissionFlags& flags, const CNet
         }
         NetPermissions::AddFlag(flags, NetPermissionFlags::Mempool);
         NetPermissions::AddFlag(flags, NetPermissionFlags::NoBan);
+        NetPermissions::AddFlag(flags, NetPermissionFlags::Addr);
     }
 }
 
