@@ -129,8 +129,6 @@ static constexpr double BLOCK_DOWNLOAD_TIMEOUT_BASE = 1;
 static constexpr double BLOCK_DOWNLOAD_TIMEOUT_PER_PEER = 0.5;
 /** Maximum number of headers to announce when relaying blocks with headers message.*/
 static const unsigned int MAX_BLOCKS_TO_ANNOUNCE = 8;
-/** Maximum number of unconnecting headers announcements before DoS score */
-static const int MAX_NUM_UNCONNECTING_HEADERS_MSGS = 10;
 /** Minimum blocks required to signal NODE_NETWORK_LIMITED */
 static const unsigned int NODE_NETWORK_LIMITED_MIN_BLOCKS = 288;
 /** Window, in blocks, for connecting to NODE_NETWORK_LIMITED peers */
@@ -1813,10 +1811,23 @@ void PeerManagerImpl::Misbehaving(Peer& peer, int howmuch, const std::string& me
              peer.m_id, score_before, score_now, warning, message_prefixed);
 }
 
+static void HandleDoSPunishment(CConnman& connman, NodeId node_id, const int nDoS, const char * const what_is_it) {
+    // We never actually DoS ban for invalid blocks, merely disconnect nodes if we're relying on them as a primary node
+    const std::string msg = strprintf("peer=%d got DoS score %d on invalid %s", node_id, nDoS, what_is_it);
+    connman.ForNode(node_id, [msg](CNode* node) {
+        if (node->PunishInvalidBlocks()) {
+            LogPrint(BCLog::NET, "%s; simply disconnecting\n", msg);
+            node->fDisconnect = true;
+        } else {
+            LogPrint(BCLog::NET, "%s; tolerating\n", msg);
+        }
+        return true;
+    });
+}
+
 bool PeerManagerImpl::MaybePunishNodeForBlock(NodeId nodeid, const BlockValidationState& state,
                                               bool via_compact_block, const std::string& message)
 {
-    PeerRef peer{GetPeerRef(nodeid)};
     switch (state.GetResult()) {
     case BlockValidationResult::BLOCK_RESULT_UNSET:
         break;
@@ -1828,7 +1839,7 @@ bool PeerManagerImpl::MaybePunishNodeForBlock(NodeId nodeid, const BlockValidati
     case BlockValidationResult::BLOCK_CONSENSUS:
     case BlockValidationResult::BLOCK_MUTATED:
         if (!via_compact_block) {
-            if (peer) Misbehaving(*peer, 100, message);
+            HandleDoSPunishment(m_connman, nodeid, 100, "block");
             return true;
         }
         break;
@@ -1843,7 +1854,7 @@ bool PeerManagerImpl::MaybePunishNodeForBlock(NodeId nodeid, const BlockValidati
             // Discourage outbound (but not inbound) peers if on an invalid chain.
             // Exempt HB compact block peers. Manual connections are always protected from discouragement.
             if (!via_compact_block && !node_state->m_is_inbound) {
-                if (peer) Misbehaving(*peer, 100, message);
+                HandleDoSPunishment(m_connman, nodeid, 100, "block");
                 return true;
             }
             break;
@@ -1851,12 +1862,12 @@ bool PeerManagerImpl::MaybePunishNodeForBlock(NodeId nodeid, const BlockValidati
     case BlockValidationResult::BLOCK_INVALID_HEADER:
     case BlockValidationResult::BLOCK_CHECKPOINT:
     case BlockValidationResult::BLOCK_INVALID_PREV:
-        if (peer) Misbehaving(*peer, 100, message);
+        HandleDoSPunishment(m_connman, nodeid, 100, "block header");
         return true;
     // Conflicting (but not necessarily invalid) data or different policy:
     case BlockValidationResult::BLOCK_MISSING_PREV:
         // TODO: Handle this much more gracefully (10 DoS points is super arbitrary)
-        if (peer) Misbehaving(*peer, 10, message);
+        HandleDoSPunishment(m_connman, nodeid, 10, "block header");
         return true;
     case BlockValidationResult::BLOCK_RECENT_CONSENSUS_CHANGE:
     case BlockValidationResult::BLOCK_TIME_FUTURE:
@@ -1876,7 +1887,7 @@ bool PeerManagerImpl::MaybePunishNodeForTx(NodeId nodeid, const TxValidationStat
         break;
     // The node is providing invalid data:
     case TxValidationResult::TX_CONSENSUS:
-        if (peer) Misbehaving(*peer, 100, "");
+        HandleDoSPunishment(m_connman, nodeid, 100, "transaction");
         return true;
     // Conflicting (but not necessarily invalid) data or different policy:
     case TxValidationResult::TX_RECENT_CONSENSUS_CHANGE:
@@ -2583,9 +2594,6 @@ arith_uint256 PeerManagerImpl::GetAntiDoSWorkThreshold()
  *
  * We'll send a getheaders message in response to try to connect the chain.
  *
- * The peer can send up to MAX_NUM_UNCONNECTING_HEADERS_MSGS in a row that
- * don't connect before given DoS points.
- *
  * Once a headers message is received that is valid and does connect,
  * m_num_unconnecting_headers_msgs gets reset back to 0.
  */
@@ -2608,10 +2616,8 @@ void PeerManagerImpl::HandleFewUnconnectingHeaders(CNode& pfrom, Peer& peer,
     // we can use this peer to download.
     WITH_LOCK(cs_main, UpdateBlockAvailability(pfrom.GetId(), headers.back().GetHash()));
 
-    // The peer may just be broken, so periodically assign DoS points if this
-    // condition persists.
-    if (peer.m_num_unconnecting_headers_msgs % MAX_NUM_UNCONNECTING_HEADERS_MSGS == 0) {
-        Misbehaving(peer, 20, strprintf("%d non-connecting headers", peer.m_num_unconnecting_headers_msgs));
+    if (pfrom.PunishInvalidBlocks()) {
+        pfrom.fDisconnect = true;
     }
 }
 

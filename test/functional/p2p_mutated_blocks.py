@@ -99,13 +99,13 @@ class MutatedBlocksTest(BitcoinTestFramework):
 
         # Check that unexpected-witness mutation check doesn't trigger on a header that doesn't connect to anything
         assert_equal(len(self.nodes[0].getpeerinfo()), 1)
-        attacker = self.nodes[0].add_p2p_connection(P2PInterface())
+        attacker = self.nodes[0].add_outbound_p2p_connection(P2PInterface(), p2p_idx=1)
         block_missing_prev = copy.deepcopy(block)
         block_missing_prev.hashPrevBlock = 123
         block_missing_prev.solve()
 
-        # Attacker gets a DoS score of 10, not immediately disconnected, so we do it 10 times to get to 100
-        for _ in range(10):
+        # Attacker gets immediately disconnected
+        for _ in range(1):
             assert_equal(len(self.nodes[0].getpeerinfo()), 2)
             with self.nodes[0].assert_debug_log(expected_msgs=["AcceptBlock FAILED (prev-blk-not-found)"]):
                 attacker.send_message(msg_block(block_missing_prev))
