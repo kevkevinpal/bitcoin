@@ -627,11 +627,16 @@ CreatedTransactionResult FundTransaction(CWallet& wallet, const CMutableTransact
                 {"minconf", UniValueType(UniValue::VNUM)},
                 {"maxconf", UniValueType(UniValue::VNUM)},
                 {"input_weights", UniValueType(UniValue::VARR)},
+                {"segwit_inputs_only", UniValueType(UniValue::VBOOL)},
             },
             true, true);
 
         if (options.exists("add_inputs")) {
             coinControl.m_allow_other_inputs = options["add_inputs"].get_bool();
+        }
+
+        if (options.exists("segwit_inputs_only")) {
+            coinControl.m_segwit_inputs_only = options["segwit_inputs_only"].get_bool();
         }
 
         if (options.exists("changeAddress") || options.exists("change_address")) {
@@ -879,6 +884,7 @@ RPCHelpMan fundrawtransaction()
                                     },
                                 },
                              },
+                            {"segwit_inputs_only", RPCArg::Type::BOOL, RPCArg::Default{false}, "Whether to only use segwit inputs for transaction."},
                         },
                         FundTxDoc()),
                         RPCArgOptions{
