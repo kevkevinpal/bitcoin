@@ -13,6 +13,9 @@
 #include <cstdint>
 #include <optional>
 
+class CBlockPolicyEstimator;
+class CScheduler;
+
 enum class RBFPolicy { Never, OptIn, Always };
 enum class TRUCPolicy { Reject, Accept, Enforce };
 
@@ -40,6 +43,9 @@ namespace kernel {
  * Most of the time, this struct should be referenced as CTxMemPool::Options.
  */
 struct MemPoolOptions {
+    /* Used to estimate appropriate transaction fees. */
+    CBlockPolicyEstimator* estimator{nullptr};
+    CScheduler* scheduler;
     /* The ratio used to determine how often sanity checks will run.  */
     int check_ratio{0};
     int64_t max_size_bytes{DEFAULT_MAX_MEMPOOL_SIZE_MB * 1'000'000};
@@ -48,6 +54,10 @@ struct MemPoolOptions {
     /** A fee rate smaller than this is considered zero fee (for relaying, mining and transaction creation) */
     CFeeRate min_relay_feerate{DEFAULT_MIN_RELAY_TX_FEE};
     CFeeRate dust_relay_feerate{DUST_RELAY_TX_FEE};
+    /** Negative for a target number of blocks, positive for target kB into current mempool. */
+    int32_t dust_relay_target;
+    /** Multiplier for dustdynamic assignments, in thousandths. */
+    int dust_relay_multiplier{DEFAULT_DUST_RELAY_MULTIPLIER};
     /**
      * A data carrying output is an unspendable output containing data. The script
      * type is designated as TxoutType::NULL_DATA.

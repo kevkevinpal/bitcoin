@@ -14,10 +14,12 @@
 #include <crypto/ripemd160.h>
 #include <logging.h>
 #include <policy/coin_age_priority.h>
+#include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/settings.h>
 #include <random.h>
 #include <reverse_iterator.h>
+#include <scheduler.h>
 #include <script/script.h>
 #include <util/check.h>
 #include <util/moneystr.h>
@@ -406,11 +408,16 @@ void CTxMemPoolEntry::UpdateAncestorState(int32_t modifySize, CAmount modifyFee,
 
 CTxMemPool::CTxMemPool(const Options& opts)
     : m_check_ratio{opts.check_ratio},
+      minerPolicyEstimator{opts.estimator},
+      scheduler{opts.scheduler},
       m_max_size_bytes{opts.max_size_bytes},
       m_expiry{opts.expiry},
       m_incremental_relay_feerate{opts.incremental_relay_feerate},
       m_min_relay_feerate{opts.min_relay_feerate},
       m_dust_relay_feerate{opts.dust_relay_feerate},
+      m_dust_relay_feerate_floor{opts.dust_relay_feerate},
+      m_dust_relay_target{opts.dust_relay_target},
+      m_dust_relay_multiplier{opts.dust_relay_multiplier},
       m_permit_bare_pubkey{opts.permit_bare_pubkey},
       m_permit_bare_multisig{opts.permit_bare_multisig},
       m_max_datacarrier_bytes{opts.max_datacarrier_bytes},
@@ -420,6 +427,12 @@ CTxMemPool::CTxMemPool(const Options& opts)
       m_persist_v1_dat{opts.persist_v1_dat},
       m_limits{opts.limits}
 {
+    Assert(scheduler || !m_dust_relay_target);
+    if (scheduler) {
+        scheduler->scheduleEvery([this]{
+            UpdateDynamicDustFeerate();
+        }, DYNAMIC_DUST_FEERATE_UPDATE_INTERVAL);
+    }
 }
 
 bool CTxMemPool::isSpent(const COutPoint& outpoint) const
@@ -686,6 +699,36 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
     GetMainSignals().MempoolTransactionsRemovedForBlock(txs_removed_for_block, nBlockHeight);
     lastRollingFeeUpdate = GetTime();
     blockSinceLastRollingFeeBump = true;
+}
+
+void CTxMemPool::UpdateDynamicDustFeerate()
+{
+    CFeeRate est_feerate{0};
+    if (m_dust_relay_target < 0 && minerPolicyEstimator) {
+        static constexpr double target_success_threshold{0.8};
+        est_feerate = minerPolicyEstimator->estimateRawFee(-m_dust_relay_target, target_success_threshold, FeeEstimateHorizon::LONG_HALFLIFE, nullptr);
+    } else if (m_dust_relay_target > 0) {
+        auto bytes_remaining = int64_t{m_dust_relay_target} * 1'000;
+        LOCK(cs);
+        for (auto mi = mapTx.get<ancestor_score>().begin(); mi != mapTx.get<ancestor_score>().end(); ++mi) {
+            bytes_remaining -= mi->GetTxSize();
+            if (bytes_remaining <= 0) {
+                est_feerate = CFeeRate(mi->GetFee(), mi->GetTxSize());
+                break;
+            }
+        }
+    }
+
+    est_feerate = (est_feerate * m_dust_relay_multiplier) / 1'000;
+
+    if (est_feerate < m_dust_relay_feerate_floor) {
+        est_feerate = m_dust_relay_feerate_floor;
+    }
+
+    if (m_dust_relay_feerate != est_feerate) {
+        LogPrint(BCLog::MEMPOOL, "Updating dust feerate to %s\n", est_feerate.ToString(FeeEstimateMode::SAT_VB));
+        m_dust_relay_feerate = est_feerate;
+    }
 }
 
 void CTxMemPool::check(const CCoinsViewCache& active_coins_tip, int64_t spendheight) const

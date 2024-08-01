@@ -43,6 +43,8 @@
 class CChain;
 class CScript;
 
+static constexpr std::chrono::minutes DYNAMIC_DUST_FEERATE_UPDATE_INTERVAL{15};
+
 /** Fake height value used in Coin to signify they are only in the memory pool (since 0.8) */
 static const uint32_t MEMPOOL_HEIGHT = 0x7FFFFFFF;
 
@@ -210,6 +212,8 @@ struct entry_time {};
 struct ancestor_score {};
 struct index_by_wtxid {};
 
+class CBlockPolicyEstimator;
+
 /**
  * Information about a mempool transaction.
  */
@@ -309,6 +313,8 @@ class CTxMemPool
 protected:
     const int m_check_ratio; //!< Value n means that 1 times in n we check.
     std::atomic<unsigned int> nTransactionsUpdated{0}; //!< Used by getblocktemplate to trigger CreateNewBlock() invocation
+    CBlockPolicyEstimator* const minerPolicyEstimator;
+    CScheduler* scheduler;
 
     uint64_t totalTxSize GUARDED_BY(cs){0};      //!< sum of all mempool tx's virtual sizes. Differs from serialized tx size since witness data is discounted. Defined in BIP 141.
     CAmount m_total_fee GUARDED_BY(cs){0};       //!< sum of all mempool tx's fees (NOT modified fee)
@@ -449,7 +455,10 @@ public:
     const std::chrono::seconds m_expiry;
     const CFeeRate m_incremental_relay_feerate;
     const CFeeRate m_min_relay_feerate;
-    const CFeeRate m_dust_relay_feerate;
+    CFeeRate m_dust_relay_feerate;
+    CFeeRate m_dust_relay_feerate_floor;
+    int32_t m_dust_relay_target;
+    int m_dust_relay_multiplier;
     const bool m_permit_bare_pubkey;
     const bool m_permit_bare_multisig;
     const std::optional<unsigned> m_max_datacarrier_bytes;
@@ -512,6 +521,8 @@ public:
      * either just been added to the chain or just been removed.
      */
     void UpdateDependentPriorities(const CTransaction &tx, unsigned int nBlockHeight, bool addToChain);
+
+    void UpdateDynamicDustFeerate();
 
     /** Affect CreateNewBlock prioritisation of transactions */
     void PrioritiseTransaction(const uint256& hash, double dPriorityDelta, const CAmount& nFeeDelta);
