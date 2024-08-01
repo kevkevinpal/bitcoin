@@ -26,6 +26,7 @@
 #include <univalue.h>
 #include <util/fs.h>
 #include <util/fs_helpers.h>
+#include <util/syserror.h>
 #include <util/translation.h>
 
 namespace {
@@ -78,7 +79,11 @@ bool SerializeFileDB(const std::string& prefix, const fs::path& path, const Data
         remove(pathTmp);
         return error("%s: Failed to flush file %s", __func__, fs::PathToString(pathTmp));
     }
-    fileout.fclose();
+    if (fileout.fclose() != 0) {
+        remove(pathTmp);
+        LogError("%s: Failed to close file %s: %s\n", __func__, fs::PathToString(pathTmp), SysErrorString(errno));
+        return false;
+    }
 
     // replace existing file, if any, with new file
     if (!RenameOver(pathTmp, path)) {
