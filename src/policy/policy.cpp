@@ -111,7 +111,7 @@ static inline bool MaybeReject_(std::string& out_reason, const std::string& reas
     }  \
 } while(0)
 
-bool IsStandardTx(const CTransaction& tx, const std::optional<unsigned>& max_datacarrier_bytes, bool permit_bare_pubkey, bool permit_bare_multisig, const CFeeRate& dust_relay_fee, std::string& out_reason, const ignore_rejects_type& ignore_rejects)
+bool IsStandardTx(const CTransaction& tx, const std::optional<unsigned>& max_datacarrier_bytes, bool permit_bare_pubkey, bool permit_bare_multisig, const bool reject_tokens, const CFeeRate& dust_relay_fee, std::string& out_reason, const ignore_rejects_type& ignore_rejects)
 {
     const std::string reason_prefix;
 
@@ -158,6 +158,9 @@ bool IsStandardTx(const CTransaction& tx, const std::optional<unsigned>& max_dat
         }
 
         if (whichType == TxoutType::NULL_DATA) {
+            if (txout.scriptPubKey.size() > 2 && txout.scriptPubKey[1] == OP_13 && reject_tokens) {
+                MaybeReject("tokens-runes");
+            }
             nDataOut++;
             continue;
         }

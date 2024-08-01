@@ -420,6 +420,7 @@ CTxMemPool::CTxMemPool(const Options& opts)
       m_dust_relay_multiplier{opts.dust_relay_multiplier},
       m_permit_bare_pubkey{opts.permit_bare_pubkey},
       m_permit_bare_multisig{opts.permit_bare_multisig},
+      m_reject_tokens{opts.reject_tokens},
       m_max_datacarrier_bytes{opts.max_datacarrier_bytes},
       m_datacarrier_fullcount{opts.datacarrier_fullcount},
       m_accept_non_std_datacarrier{opts.accept_non_std_datacarrier},
