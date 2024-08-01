@@ -7,6 +7,7 @@
 #define BITCOIN_NET_PROCESSING_H
 
 #include <net.h>
+#include <threadsafety.h>
 #include <validationinterface.h>
 
 class AddrMan;
@@ -84,6 +85,7 @@ public:
 
     /** Get statistics from node state */
     virtual bool GetNodeStateStats(NodeId nodeid, CNodeStateStats& stats) const = 0;
+    virtual void LimitOrphanTxSize(unsigned int nMaxOrphans) = 0;
 
     /** Whether this node ignores txs received over p2p. */
     virtual bool IgnoresIncomingTxs() = 0;

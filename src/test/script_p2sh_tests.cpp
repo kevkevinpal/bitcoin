@@ -20,13 +20,13 @@
 // Helpers:
 static bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, std::string& reason)
 {
-    return IsStandardTx(tx, std::nullopt, DEFAULT_PERMIT_BAREPUBKEY, permit_bare_multisig, /*reject_parasites=*/ false, /*reject_tokens=*/false, CFeeRate{DUST_RELAY_TX_FEE}, reason);
+    return IsStandardTx(tx, std::nullopt, /*permit_bare_pubkey=*/ true, permit_bare_multisig, /*reject_parasites=*/ false, /*reject_tokens=*/false, CFeeRate{DUST_RELAY_TX_FEE}, reason);
 }
 
 static bool IsStandardTx(const CTransaction& tx, std::string& reason)
 {
-    return IsStandardTx(tx, std::nullopt, DEFAULT_PERMIT_BAREPUBKEY, /*permit_bare_multisig=*/true, /*reject_parasites=*/ false, /*reject_tokens=*/false, CFeeRate{DUST_RELAY_TX_FEE}, reason) &&
-           IsStandardTx(tx, std::nullopt, DEFAULT_PERMIT_BAREPUBKEY, /*permit_bare_multisig=*/false, /*reject_parasites=*/ false, /*reject_tokens=*/false, CFeeRate{DUST_RELAY_TX_FEE}, reason);
+    return IsStandardTx(tx, std::nullopt, /*permit_bare_pubkey=*/ true, /*permit_bare_multisig=*/true, /*reject_parasites=*/ false, /*reject_tokens=*/false, CFeeRate{DUST_RELAY_TX_FEE}, reason) &&
+           IsStandardTx(tx, std::nullopt, /*permit_bare_pubkey=*/ true, /*permit_bare_multisig=*/false, /*reject_parasites=*/ false, /*reject_tokens=*/false, CFeeRate{DUST_RELAY_TX_FEE}, reason);
 }
 
 static std::vector<unsigned char> Serialize(const CScript& s)

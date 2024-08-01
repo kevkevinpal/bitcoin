@@ -60,8 +60,8 @@ void RegenerateCommitments(CBlock& block, ChainstateManager& chainman)
 BlockAssembler::Options BlockAssembler::Options::Clamped() const
 {
     BlockAssembler::Options options = *this;
-    // Limit weight to between 4K and DEFAULT_BLOCK_MAX_WEIGHT for sanity:
-    options.nBlockMaxWeight = std::clamp<size_t>(options.nBlockMaxWeight, 4000, DEFAULT_BLOCK_MAX_WEIGHT);
+    // Limit weight to between 4K and MAX_BLOCK_WEIGHT-4k for sanity:
+    options.nBlockMaxWeight = std::clamp<size_t>(options.nBlockMaxWeight, 4000, MAX_BLOCK_WEIGHT - 4000);
     // Limit size to between 1K and MAX_BLOCK_SERIALIZED_SIZE-1K for sanity:
     options.nBlockMaxSize = std::clamp<size_t>(options.nBlockMaxSize, 1000, MAX_BLOCK_SERIALIZED_SIZE - 1000);
     return options;

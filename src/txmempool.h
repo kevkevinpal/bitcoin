@@ -452,26 +452,26 @@ public:
     using Options = kernel::MemPoolOptions;
 
     int64_t m_max_size_bytes;
-    const std::chrono::seconds m_expiry;
-    const CFeeRate m_incremental_relay_feerate;
-    const CFeeRate m_min_relay_feerate;
+    std::chrono::seconds m_expiry;
+    CFeeRate m_incremental_relay_feerate;
+    CFeeRate m_min_relay_feerate;
     CFeeRate m_dust_relay_feerate;
     CFeeRate m_dust_relay_feerate_floor;
     int32_t m_dust_relay_target;
     int m_dust_relay_multiplier;
-    const bool m_permit_bare_pubkey;
-    const bool m_permit_bare_multisig;
+    bool m_permit_bare_pubkey;
+    bool m_permit_bare_multisig;
     bool m_reject_parasites;
     bool m_reject_tokens;
-    const std::optional<unsigned> m_max_datacarrier_bytes;
+    std::optional<unsigned> m_max_datacarrier_bytes;
     bool m_datacarrier_fullcount;
     bool m_accept_non_std_datacarrier;
-    const bool m_require_standard;
-    const RBFPolicy m_rbf_policy;
-    const TRUCPolicy m_truc_policy;
+    bool m_require_standard;
+    RBFPolicy m_rbf_policy;
+    TRUCPolicy m_truc_policy;
     const bool m_persist_v1_dat;
 
-    const Limits m_limits;
+    Limits m_limits;
 
     /** Create a new CTxMemPool.
      * Sanity checks will be off by default for performance, because otherwise

@@ -41,7 +41,6 @@
 typedef std::vector<unsigned char> valtype;
 
 static CFeeRate g_dust{DUST_RELAY_TX_FEE};
-static bool g_bare_pubkey{DEFAULT_PERMIT_BAREPUBKEY};
 static bool g_bare_multi{DEFAULT_PERMIT_BAREMULTISIG};
 
 static std::map<std::string, unsigned int> mapFlagNames = {
@@ -761,12 +760,12 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
 
     const auto CheckIsStandard = [&](const auto& t) {
         std::string reason;
-        BOOST_CHECK(IsStandardTx(CTransaction{t}, MAX_OP_RETURN_RELAY, g_bare_pubkey, g_bare_multi, /*reject_parasites=*/ reject_parasites, /*reject_tokens=*/reject_tokens, g_dust, reason));
+        BOOST_CHECK(IsStandardTx(CTransaction{t}, MAX_OP_RETURN_RELAY, /*permit_bare_pubkey=*/ true, g_bare_multi, /*reject_parasites=*/ reject_parasites, /*reject_tokens=*/reject_tokens, g_dust, reason));
         BOOST_CHECK(reason.empty());
     };
     const auto CheckIsNotStandard = [&](const auto& t, const std::string& reason_in) {
         std::string reason;
-        BOOST_CHECK(!IsStandardTx(CTransaction{t}, MAX_OP_RETURN_RELAY, g_bare_pubkey, g_bare_multi, /*reject_parasites=*/ reject_parasites, /*reject_tokens=*/reject_tokens, g_dust, reason));
+        BOOST_CHECK(!IsStandardTx(CTransaction{t}, MAX_OP_RETURN_RELAY, /*permit_bare_pubkey=*/ true, g_bare_multi, /*reject_parasites=*/ reject_parasites, /*reject_tokens=*/reject_tokens, g_dust, reason));
         BOOST_CHECK_EQUAL(reason_in, reason);
     };
 
@@ -834,12 +833,15 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
     reject_tokens = false;
 
     // MAX_OP_RETURN_RELAY-byte TxoutType::NULL_DATA (standard)
-    t.vout[0].scriptPubKey = CScript() << OP_RETURN << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef3804678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38");
+    t.vout[0].scriptPubKey = CScript() << OP_RETURN;
+    while (t.vout[0].scriptPubKey.size() < MAX_OP_RETURN_RELAY) {
+        t.vout[0].scriptPubKey << OP_0;
+    }
     BOOST_CHECK_EQUAL(MAX_OP_RETURN_RELAY, t.vout[0].scriptPubKey.size());
     CheckIsStandard(t);
 
     // MAX_OP_RETURN_RELAY+1-byte TxoutType::NULL_DATA (non-standard)
-    t.vout[0].scriptPubKey = CScript() << OP_RETURN << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef3804678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef3800");
+    t.vout[0].scriptPubKey << OP_0;
     BOOST_CHECK_EQUAL(MAX_OP_RETURN_RELAY + 1, t.vout[0].scriptPubKey.size());
     CheckIsNotStandard(t, "scriptpubkey");
 

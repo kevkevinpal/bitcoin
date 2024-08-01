@@ -26,13 +26,13 @@ static constexpr unsigned int DEFAULT_BLOCKSONLY_MAX_MEMPOOL_SIZE_MB{5};
 /** Default for -mempoolexpiry, expiration time for mempool transactions in hours */
 static constexpr unsigned int DEFAULT_MEMPOOL_EXPIRY_HOURS{336};
 /** Default for -mempoolreplacement; must update docs in init.cpp manually */
-static constexpr RBFPolicy DEFAULT_MEMPOOL_RBF_POLICY{RBFPolicy::OptIn};
+static constexpr RBFPolicy DEFAULT_MEMPOOL_RBF_POLICY{RBFPolicy::Always};
 /** Default for -mempooltruc; must update docs in init.cpp manually */
-static constexpr TRUCPolicy DEFAULT_MEMPOOL_TRUC_POLICY{TRUCPolicy::Reject};
+static constexpr TRUCPolicy DEFAULT_MEMPOOL_TRUC_POLICY{TRUCPolicy::Accept};
 /** Whether to fall back to legacy V1 serialization when writing mempool.dat */
 static constexpr bool DEFAULT_PERSIST_V1_DAT{false};
 /** Default for -acceptnonstddatacarrier */
-static constexpr bool DEFAULT_ACCEPT_NON_STD_DATACARRIER{true};
+static constexpr bool DEFAULT_ACCEPT_NON_STD_DATACARRIER{false};
 /** Default for -acceptnonstdtxn */
 static constexpr bool DEFAULT_ACCEPT_NON_STD_TXN{false};
 
