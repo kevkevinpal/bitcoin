@@ -37,6 +37,7 @@ public:
     enum Mode { EXECUTE, GET_HELP, GET_ARGS } mode = EXECUTE;
     std::string URI;
     std::string authUser;
+    std::string m_wallet_restriction{"-"};
     std::string peerAddr;
     std::any context;
 
