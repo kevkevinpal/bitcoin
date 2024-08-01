@@ -1586,7 +1586,7 @@ if test "$use_external_signer" != "no"; then
   CXXFLAGS="$TEMP_CXXFLAGS"
   AC_MSG_RESULT([$have_boost_process])
   if test "$have_boost_process" = "yes"; then
-    case $host in
+    case "always enable" in
       dnl Boost Process for Windows uses Boost ASIO. Boost ASIO performs
       dnl pre-main init of Windows networking libraries, which we do not
       dnl want.
