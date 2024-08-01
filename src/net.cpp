@@ -1792,6 +1792,9 @@ void CConnman::CreateNodeFromAcceptedSocket(std::unique_ptr<Sock>&& sock,
     if (NetPermissions::HasFlag(permission_flags, NetPermissionFlags::BloomFilter)) {
         nodeServices = static_cast<ServiceFlags>(nodeServices | NODE_BLOOM);
     }
+    if (NetPermissions::HasFlag(permission_flags, NetPermissionFlags::BlockFilters)) {
+        nodeServices = static_cast<ServiceFlags>(nodeServices | NODE_COMPACT_FILTERS);
+    }
 
     const bool inbound_onion = std::find(m_onion_binds.begin(), m_onion_binds.end(), addr_bind) != m_onion_binds.end();
     // The V2Transport transparently falls back to V1 behavior when an incoming V1 connection is
