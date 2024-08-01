@@ -11,6 +11,7 @@ from test_framework.util import (
 )
 
 import http.client
+import os
 from pathlib import Path
 import urllib.parse
 import subprocess
@@ -18,6 +19,7 @@ from random import SystemRandom
 import string
 import configparser
 import sys
+from typing import Optional
 
 
 def call_with_auth(node, user, password):
@@ -119,6 +121,74 @@ class HTTPBasicsTest(BitcoinTestFramework):
         self.log.info('Wrong...')
         assert_equal(401, call_with_auth(node, user + 'wrong', password + 'wrong').status)
 
+    def test_rpccookieperms(self):
+        p = {
+            "owner": 0o600,
+            "group": 0o640,
+            "all": 0o644,
+            "440": 0o440,
+            "0640": 0o640,
+            "444": 0o444,
+            "1660": 0o1660,
+        }
+
+        if os.name == 'nt':
+            self.log.info(f"Skip cookie file permissions checks as OS detected as: {os.name=}")
+            return
+
+        self.log.info('Check cookie file permissions can be set using -rpccookieperms')
+
+        cookie_file_path = self.nodes[1].chain_path / '.cookie'
+        PERM_BITS_UMASK = 0o7777
+
+        def test_perm(perm: Optional[str]):
+            if not perm:
+                perm = 'owner'
+                self.restart_node(1)
+            else:
+                self.restart_node(1, extra_args=[f"-rpccookieperms={perm}"])
+
+            file_stat = os.stat(cookie_file_path)
+            actual_perms = file_stat.st_mode & PERM_BITS_UMASK
+            expected_perms = p[perm]
+            assert_equal(expected_perms, actual_perms)
+            return actual_perms
+
+        # Remove any leftover rpc{user|password} config options from previous tests
+        conf = self.nodes[1].bitcoinconf
+        with conf.open('r') as file:
+            lines = file.readlines()
+        filtered_lines = [line for line in lines if not line.startswith('rpcuser') and not line.startswith('rpcpassword')]
+        with conf.open('w') as file:
+            file.writelines(filtered_lines)
+
+        self.log.info('Check default cookie permission')
+        default_perms = test_perm(None)
+
+        self.log.info('Check custom cookie permissions')
+        for perm in p.keys():
+            test_perm(perm)
+
+        self.log.info('Check leaving cookie permissions alone')
+        unassigned_perms = os.stat(self.nodes[1].chain_path / 'debug.log').st_mode & PERM_BITS_UMASK
+        self.restart_node(1, extra_args=["-rpccookieperms=0"])
+        actual_perms = os.stat(cookie_file_path).st_mode & PERM_BITS_UMASK
+        assert_equal(unassigned_perms, actual_perms)
+        self.restart_node(1, extra_args=["-norpccookieperms"])
+        actual_perms = os.stat(cookie_file_path).st_mode & PERM_BITS_UMASK
+        assert_equal(unassigned_perms, actual_perms)
+
+        self.log.info('Check -norpccookieperms -rpccookieperms')
+        self.restart_node(1, extra_args=["-rpccookieperms=0", "-rpccookieperms=1"])
+        actual_perms = os.stat(cookie_file_path).st_mode & PERM_BITS_UMASK
+        assert_equal(default_perms, actual_perms)
+        self.restart_node(1, extra_args=["-norpccookieperms", "-rpccookieperms"])
+        actual_perms = os.stat(cookie_file_path).st_mode & PERM_BITS_UMASK
+        assert_equal(default_perms, actual_perms)
+        self.restart_node(1, extra_args=["-rpccookieperms=1660", "-norpccookieperms", "-rpccookieperms"])
+        actual_perms = os.stat(cookie_file_path).st_mode & PERM_BITS_UMASK
+        assert_equal(default_perms, actual_perms)
+
     def run_test(self):
         self.conf_setup()
         self.log.info('Check correctness of the rpcauth config option')
@@ -186,7 +256,22 @@ class HTTPBasicsTest(BitcoinTestFramework):
 
         self.log.info('Check that failure to write cookie file will abort the node gracefully')
         (self.nodes[0].chain_path / ".cookie.tmp").mkdir()
+        (self.nodes[0].chain_path / ".cookie.tmp/subdir").mkdir()
         self.nodes[0].assert_start_raises_init_error(expected_msg=init_error)
+        (self.nodes[0].chain_path / ".cookie.tmp/subdir").rmdir()
+        (self.nodes[0].chain_path / ".cookie.tmp").rmdir()
+
+        (self.nodes[0].chain_path / ".cookie").mkdir()
+        (self.nodes[0].chain_path / ".cookie/subdir").mkdir()
+        self.nodes[0].assert_start_raises_init_error(expected_msg=init_error)
+        (self.nodes[0].chain_path / ".cookie/subdir").rmdir()
+        (self.nodes[0].chain_path / ".cookie").rmdir()
+
+        self.log.info('Check that a non-writable cookie file will get replaced gracefully')
+        (self.nodes[0].chain_path / ".cookie").mkdir(mode=1)
+        self.restart_node(0)
+
+        self.test_rpccookieperms()
 
 
 if __name__ == '__main__':

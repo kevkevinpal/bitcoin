@@ -18,6 +18,7 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -322,4 +323,100 @@ bool TryCreateDirectories(const fs::path& p)
 
     // create_directories didn't create the directory, it had to have existed already
     return false;
+}
+
+std::string PermsToString(fs::perms p)
+{
+    std::string perm_str(9, '-');
+
+    auto set_perm = [&](size_t pos, fs::perms required_perm, char letter, char else_letter = '\0') {
+        if ((p & required_perm) != fs::perms::none) {
+            perm_str[pos] = letter;
+        } else if (else_letter) {
+            perm_str[pos] = else_letter;
+        }
+    };
+
+    set_perm(0, fs::perms::owner_read,   'r');
+    set_perm(1, fs::perms::owner_write,  'w');
+    if ((p & fs::perms::owner_exec) != fs::perms::none) {
+        set_perm(2, fs::perms::set_uid,  's', 'x');
+    } else {
+        set_perm(2, fs::perms::set_uid,  'S');
+    }
+
+    set_perm(3, fs::perms::group_read,   'r');
+    set_perm(4, fs::perms::group_write,  'w');
+    if ((p & fs::perms::group_exec) != fs::perms::none) {
+        set_perm(5, fs::perms::set_gid,  's', 'x');
+    } else {
+        set_perm(5, fs::perms::set_gid,  'S');
+    }
+
+    set_perm(6, fs::perms::others_read,  'r');
+    set_perm(7, fs::perms::others_write, 'w');
+    if ((p & fs::perms::others_exec)  != fs::perms::none) {
+        set_perm(8, fs::perms::sticky_bit, 't', 'x');
+    } else {
+        set_perm(8, fs::perms::sticky_bit, 'T');
+    }
+
+    return perm_str;
+}
+
+unsigned int PermsToOctal(fs::perms p)
+{
+    unsigned int octalPerms = 0;
+
+    octalPerms |= (p & fs::perms::owner_read)   != fs::perms::none ? 0400 : 0;
+    octalPerms |= (p & fs::perms::owner_write)  != fs::perms::none ? 0200 : 0;
+    octalPerms |= (p & fs::perms::owner_exec)   != fs::perms::none ? 0100 : 0;
+    octalPerms |= (p & fs::perms::group_read)   != fs::perms::none ? 0040 : 0;
+    octalPerms |= (p & fs::perms::group_write)  != fs::perms::none ? 0020 : 0;
+    octalPerms |= (p & fs::perms::group_exec)   != fs::perms::none ? 0010 : 0;
+    octalPerms |= (p & fs::perms::others_read)  != fs::perms::none ? 0004 : 0;
+    octalPerms |= (p & fs::perms::others_write) != fs::perms::none ? 0002 : 0;
+    octalPerms |= (p & fs::perms::others_exec)  != fs::perms::none ? 0001 : 0;
+
+    return octalPerms;
+}
+
+std::string PermsToOctalString(fs::perms p) {
+    std::ostringstream oss;
+    oss << std::oct << std::setfill('0') << std::setw(3) << PermsToOctal(p);
+    return oss.str();
+}
+
+static std::optional<unsigned> StringToOctal(const std::string& str)
+{
+    unsigned ret = 0;
+    for (char c : str) {
+        if (c < '0' || c > '7') return std::nullopt;
+        ret = (ret << 3) | (c - '0');
+    }
+    return ret;
+}
+
+static auto ConvertPermsToOctal(const std::string& str) noexcept -> std::optional<unsigned>
+{
+    if ((str.length() == 3) || (str.length() == 4)) return StringToOctal(str);
+    return std::nullopt;
+}
+
+std::optional<fs::perms> StringToPerms(const std::string& s)
+{
+    if (s == "owner") {
+        return fs::perms::owner_read | fs::perms::owner_write;
+    } else if (s == "group") {
+        return fs::perms::owner_read | fs::perms::owner_write |
+               fs::perms::group_read;
+    } else if (s == "all") {
+        return fs::perms::owner_read | fs::perms::owner_write |
+               fs::perms::group_read |
+               fs::perms::others_read;
+    } else if (auto octal_perms = ConvertPermsToOctal(s)) {
+        return static_cast<fs::perms>(*octal_perms);
+    } else {
+        return std::nullopt;
+    }
 }

@@ -11,6 +11,8 @@
 #include <netaddress.h>
 #include <rpc/protocol.h>
 #include <rpc/server.h>
+#include <util/fs.h>
+#include <util/fs_helpers.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <walletinitinterface.h>
@@ -20,8 +22,10 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 /** WWW-Authenticate to present with 401 Unauthorized response */
@@ -246,7 +250,25 @@ static bool InitRPCAuthentication()
     if (gArgs.GetArg("-rpcpassword", "") == "")
     {
         LogPrintf("Using random cookie authentication.\n");
-        if (!GenerateAuthCookie(&strRPCUserColonPass)) {
+
+        std::optional<fs::perms> cookie_perms{DEFAULT_COOKIE_PERMS};
+        auto cookie_perms_arg{gArgs.GetArg("-rpccookieperms")};
+        if (cookie_perms_arg) {
+            if (*cookie_perms_arg == "0") {
+                cookie_perms = std::nullopt;
+            } else if (cookie_perms_arg->empty() || *cookie_perms_arg == "1") {
+                // leave at default
+            } else {
+                auto perm_opt = StringToPerms(*cookie_perms_arg);
+                if (!perm_opt) {
+                    LogInfo("Invalid -rpccookieperms=%s; must be one of 'owner', 'group', or 'all'.\n", *cookie_perms_arg);
+                    return false;
+                }
+                cookie_perms = *perm_opt;
+            }
+        }
+
+        if (!GenerateAuthCookie(&strRPCUserColonPass, std::make_pair(cookie_perms, bool(cookie_perms_arg)))) {
             return false;
         }
     } else {

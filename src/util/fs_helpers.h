@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <iosfwd>
 #include <limits>
+#include <optional>
 
 /**
  * Ensure file contents are fully committed to disk, using a platform-specific
@@ -70,6 +71,11 @@ void ReleaseDirectoryLocks();
 
 bool TryCreateDirectories(const fs::path& p);
 fs::path GetDefaultDataDir();
+
+std::string PermsToString(fs::perms p);
+unsigned int PermsToOctal(fs::perms p);
+std::string PermsToOctalString(fs::perms p);
+std::optional<fs::perms> StringToPerms(const std::string& s);
 
 #ifdef WIN32
 fs::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
