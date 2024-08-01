@@ -12,6 +12,7 @@
 #include <consensus/consensus.h>
 #include <consensus/validation.h>
 #include <policy/feerate.h>
+#include <policy/settings.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <script/script.h>
@@ -23,6 +24,8 @@
 #include <cstddef>
 #include <utility>
 #include <vector>
+
+unsigned int g_script_size_policy_limit{DEFAULT_SCRIPT_SIZE_POLICY_LIMIT};
 
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 {
@@ -142,7 +145,7 @@ bool IsStandardTx(const CTransaction& tx, const std::optional<unsigned>& max_dat
         // some minor future-proofing. That's also enough to spend a
         // 20-of-20 CHECKMULTISIG scriptPubKey, though such a scriptPubKey
         // is not considered standard.
-        if (txin.scriptSig.size() > MAX_STANDARD_SCRIPTSIG_SIZE) {
+        if (txin.scriptSig.size() > std::min(MAX_STANDARD_SCRIPTSIG_SIZE, g_script_size_policy_limit)) {
             MaybeReject("scriptsig-size");
         }
         if (!txin.scriptSig.IsPushOnly()) {
@@ -153,6 +156,10 @@ bool IsStandardTx(const CTransaction& tx, const std::optional<unsigned>& max_dat
     unsigned int nDataOut = 0;
     TxoutType whichType;
     for (const CTxOut& txout : tx.vout) {
+        if (txout.scriptPubKey.size() > g_script_size_policy_limit) {
+            MaybeReject("scriptpubkey-size");
+        }
+
         if (!::IsStandard(txout.scriptPubKey, max_datacarrier_bytes, whichType)) {
             if (whichType == TxoutType::WITNESS_UNKNOWN) {
                 MaybeReject("scriptpubkey-unknown-witnessversion");
@@ -214,6 +221,10 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs,
     for (unsigned int i = 0; i < tx.vin.size(); i++) {
         const CTxOut& prev = mapInputs.AccessCoin(tx.vin[i].prevout).out;
 
+        if (prev.scriptPubKey.size() > g_script_size_policy_limit) {
+            MaybeReject("script-size");
+        }
+
         std::vector<std::vector<unsigned char> > vSolutions;
         TxoutType whichType = Solver(prev.scriptPubKey, vSolutions);
         if (whichType == TxoutType::NONSTANDARD) {
@@ -246,6 +257,9 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs,
                 return false;
             }
             CScript subscript(stack.back().begin(), stack.back().end());
+            if (subscript.size() > g_script_size_policy_limit) {
+                MaybeReject("scriptcheck-size");
+            }
             if (subscript.GetSigOpCount(true) > MAX_P2SH_SIGOPS) {
                 MaybeReject("scriptcheck-sigops");
             }
@@ -304,7 +318,7 @@ bool IsWitnessStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs,
 
         // Check P2WSH standard limits
         if (witnessversion == 0 && witnessprogram.size() == WITNESS_V0_SCRIPTHASH_SIZE) {
-            if (tx.vin[i].scriptWitness.stack.back().size() > MAX_STANDARD_P2WSH_SCRIPT_SIZE)
+            if (tx.vin[i].scriptWitness.stack.back().size() > std::min(MAX_STANDARD_P2WSH_SCRIPT_SIZE, g_script_size_policy_limit))
                 MaybeReject("script-size");
             size_t sizeWitnessStack = tx.vin[i].scriptWitness.stack.size() - 1;
             if (sizeWitnessStack > MAX_STANDARD_P2WSH_STACK_ITEMS)
@@ -330,11 +344,14 @@ bool IsWitnessStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs,
             if (stack.size() >= 2) {
                 // Script path spend (2 or more stack elements after removing optional annex)
                 const auto& control_block = SpanPopBack(stack);
-                SpanPopBack(stack); // Ignore script
+                const auto& tapscript = SpanPopBack(stack);
                 if (control_block.empty()) {
                     // Empty control block is invalid
                     out_reason = reason_prefix + "taproot-control-missing";
                     return false;
+                }
+                if (tapscript.size() > g_script_size_policy_limit) {
+                    MaybeReject("script-size");
                 }
                 if ((control_block[0] & TAPROOT_LEAF_MASK) == TAPROOT_LEAF_TAPSCRIPT) {
                     // Leaf version 0xc0 (aka Tapscript, see BIP 342)
