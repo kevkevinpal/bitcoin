@@ -311,10 +311,19 @@ AC_ARG_ENABLE([werror],
     [enable_werror=$enableval],
     [enable_werror=no])
 
+AC_ARG_WITH([boost-process],
+    [AS_HELP_STRING([--without-boost-process],[disable features that require Boost::Process (default is yes if usable)])],
+    [use_boost_process=$withval],
+    [use_boost_process=auto])
+
 AC_ARG_ENABLE([external-signer],
     [AS_HELP_STRING([--enable-external-signer],[compile external signer support (default is auto, requires Boost::Process)])],
     [use_external_signer=$enableval],
     [use_external_signer=auto])
+
+if test "$use_external_signer" = "yes" && test "$use_boost_process" = "no"; then
+  AC_MSG_ERROR([External signing (enabled explicitly) requires Boost::Process (disabled explicitly)])
+fi
 
 AC_LANG_PUSH([C++])
 
@@ -1439,6 +1448,7 @@ if test "$enable_fuzz" = "yes"; then
   bitcoin_enable_qt_dbus=no
   use_bench=no
   use_tests=no
+  use_boost_process=no
   use_external_signer=no
   use_upnp=no
   use_natpmp=no
@@ -1638,7 +1648,7 @@ if test "$use_boost" = "yes"; then
   fi
 fi
 
-if test "$use_external_signer" != "no"; then
+if test "$use_boost_process" != "no"; then
   AC_MSG_CHECKING([whether Boost.Process can be used])
   TEMP_CXXFLAGS="$CXXFLAGS"
   dnl Boost 1.78 requires the following workaround.
@@ -1699,17 +1709,31 @@ if test "$use_external_signer" != "no"; then
         use_external_signer="no"
       ;;
       *)
-        use_external_signer="yes"
-        AC_DEFINE([ENABLE_EXTERNAL_SIGNER], [1], [Define if external signer support is enabled])
+        use_boost_process=yes
+        AC_DEFINE([HAVE_BOOST_PROCESS], [1], [Define if Boost::Process is available])
         AC_DEFINE([BOOST_PROCESS_USE_STD_FS], [1], [Defined to avoid Boost::Process trying to use Boost Filesystem])
       ;;
     esac
   else
-    if test "$use_external_signer" = "yes"; then
-      AC_MSG_ERROR([External signing is not supported for this Boost version])
+    if test "$use_boost_process" = "yes"; then
+      AC_MSG_ERROR([Boost::Process is not supported for this Boost version. Use --without-boost-process])
     fi
-    use_external_signer="no";
+    use_boost_process=no
   fi
+fi
+
+AC_MSG_CHECKING([if external signer support should be enabled])
+if test "$use_external_signer" = "yes"; then
+  if test "$use_boost_process" = "no"; then
+    AC_MSG_RESULT([yes])
+    AC_MSG_ERROR([External signing is not supported for this Boost version])
+  fi
+elif test "$use_external_signer" != "no"; then
+  use_external_signer="$use_boost_process"
+fi
+AC_MSG_RESULT([$use_external_signer])
+if test "$use_external_signer" = "yes"; then
+  AC_DEFINE([ENABLE_EXTERNAL_SIGNER], [1], [Define if external signer support is enabled])
 fi
 AM_CONDITIONAL([ENABLE_EXTERNAL_SIGNER], [test "$use_external_signer" = "yes"])
 
@@ -2166,6 +2190,7 @@ esac
 
 echo
 echo "Options used to compile and link:"
+echo "  boost process   = $use_boost_process"
 echo "  external signer = $use_external_signer"
 echo "  multiprocess    = $build_multiprocess"
 echo "  with libs       = $build_bitcoin_libs"
