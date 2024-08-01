@@ -565,10 +565,10 @@ int GuiMain(int argc, char* argv[])
         }
 #endif
         if (payment_server_token_seen && arg.startsWith("-")) {
-            InitError(Untranslated(strprintf("Options ('%s') cannot follow a BIP-21 payment URI", argv[i])));
+            InitError(Untranslated(strprintf("Options ('%s') cannot follow a payment URI", argv[i])));
             QMessageBox::critical(nullptr, PACKAGE_NAME,
                                   // message cannot be translated because translations have not been initialized
-                                  QString::fromStdString("Options ('%1') cannot follow a BIP-21 payment URI").arg(QString::fromStdString(argv[i])));
+                                  QString::fromStdString("Options ('%1') cannot follow a payment URI").arg(QString::fromStdString(argv[i])));
             return EXIT_FAILURE;
         }
         if (invalid_token) {
