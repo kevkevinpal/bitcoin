@@ -7,6 +7,7 @@
 
 #include <policy/feerate.h>
 #include <primitives/transaction.h>
+#include <policy/policy.h>
 #include <util/error.h>
 
 #include <variant>
@@ -45,7 +46,7 @@ static const CFeeRate DEFAULT_MAX_RAW_TX_FEE_RATE{COIN / 10};
  * @param[in]  wait_callback wait until callbacks have been processed to avoid stale result due to a sequentially RPC.
  * return error
  */
-[[nodiscard]] TransactionError BroadcastTransaction(NodeContext& node, CTransactionRef tx, std::string& err_string, const std::variant<CAmount, CFeeRate>& max_tx_fee, bool relay, bool wait_callback);
+[[nodiscard]] TransactionError BroadcastTransaction(NodeContext& node, CTransactionRef tx, std::string& err_string, const std::variant<CAmount, CFeeRate>& max_tx_fee, bool relay, bool wait_callback, const ignore_rejects_type& ignore_rejects=empty_ignore_rejects);
 
 /**
  * Return transaction with a given hash.

@@ -53,6 +53,8 @@ static_assert(V3_MAX_VSIZE + V3_CHILD_MAX_VSIZE <= DEFAULT_DESCENDANT_SIZE_LIMIT
  * @returns debug string if an error occurs, std::nullopt otherwise.
  */
 std::optional<std::pair<std::string, CTransactionRef>> SingleV3Checks(const CTransactionRef& ptx,
+                                          const std::string& reason_prefix, std::string& out_reason,
+                                          const ignore_rejects_type& ignore_rejects,
                                           const CTxMemPool::setEntries& mempool_ancestors,
                                           const std::set<Txid>& direct_conflicts,
                                           int64_t vsize);
@@ -79,6 +81,8 @@ std::optional<std::pair<std::string, CTransactionRef>> SingleV3Checks(const CTra
  * @returns debug string if an error occurs, std::nullopt otherwise.
  * */
 std::optional<std::string> PackageV3Checks(const CTransactionRef& ptx, int64_t vsize,
+                                           const std::string& reason_prefix, std::string& out_reason,
+                                           const ignore_rejects_type& ignore_rejects,
                                            const Package& package,
                                            const CTxMemPool::setEntries& mempool_ancestors);
 
