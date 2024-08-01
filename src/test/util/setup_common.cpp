@@ -201,6 +201,7 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vecto
         .chainparams = chainparams,
         .datadir = m_args.GetDataDirNet(),
         .check_block_index = true,
+        .checkpoints_enabled = false,
         .notifications = *m_node.notifications,
         .worker_threads_num = 2,
     };
