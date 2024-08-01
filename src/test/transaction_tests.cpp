@@ -757,16 +757,16 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
     CKey key = GenerateRandomKey();
     t.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
 
-    bool reject_tokens{false};
+    bool reject_parasites{false}, reject_tokens{false};
 
     const auto CheckIsStandard = [&](const auto& t) {
         std::string reason;
-        BOOST_CHECK(IsStandardTx(CTransaction{t}, MAX_OP_RETURN_RELAY, g_bare_pubkey, g_bare_multi, /*reject_tokens=*/reject_tokens, g_dust, reason));
+        BOOST_CHECK(IsStandardTx(CTransaction{t}, MAX_OP_RETURN_RELAY, g_bare_pubkey, g_bare_multi, /*reject_parasites=*/ reject_parasites, /*reject_tokens=*/reject_tokens, g_dust, reason));
         BOOST_CHECK(reason.empty());
     };
     const auto CheckIsNotStandard = [&](const auto& t, const std::string& reason_in) {
         std::string reason;
-        BOOST_CHECK(!IsStandardTx(CTransaction{t}, MAX_OP_RETURN_RELAY, g_bare_pubkey, g_bare_multi, /*reject_tokens=*/reject_tokens, g_dust, reason));
+        BOOST_CHECK(!IsStandardTx(CTransaction{t}, MAX_OP_RETURN_RELAY, g_bare_pubkey, g_bare_multi, /*reject_parasites=*/ reject_parasites, /*reject_tokens=*/reject_tokens, g_dust, reason));
         BOOST_CHECK_EQUAL(reason_in, reason);
     };
 
@@ -812,6 +812,16 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
 
     t.vout[0].scriptPubKey = CScript() << OP_1;
     CheckIsNotStandard(t, "scriptpubkey");
+
+    // Test rejectparasites
+    t.vout[0].scriptPubKey = CScript() << OP_RETURN;
+    t.nLockTime = 21;
+    CheckIsStandard(t);
+    reject_parasites = true;
+    CheckIsNotStandard(t, "parasite-cat21");
+    t.nLockTime = 0;
+    CheckIsStandard(t);
+    reject_parasites = false;
 
     // Test rejecttokens
     t.vout[0].scriptPubKey = CScript() << OP_RETURN << OP_13 << OP_FALSE;

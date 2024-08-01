@@ -778,7 +778,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
 
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     std::string reason;
-    if (m_pool.m_require_standard && !IsStandardTx(tx, m_pool.m_max_datacarrier_bytes, m_pool.m_permit_bare_pubkey, m_pool.m_permit_bare_multisig, /*reject_tokens=*/m_pool.m_reject_tokens, m_pool.m_dust_relay_feerate, reason, ignore_rejects)) {
+    if (m_pool.m_require_standard && !IsStandardTx(tx, m_pool.m_max_datacarrier_bytes, m_pool.m_permit_bare_pubkey, m_pool.m_permit_bare_multisig, m_pool.m_reject_parasites, /*reject_tokens=*/m_pool.m_reject_tokens, m_pool.m_dust_relay_feerate, reason, ignore_rejects)) {
         return state.Invalid(TxValidationResult::TX_NOT_STANDARD, reason);
     }
 
