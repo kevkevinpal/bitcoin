@@ -504,7 +504,6 @@ inspecting signatures in Mach-O binaries.")
         autoconf-2.71
         automake
         pkg-config
-        bison
         ;; Native GCC 10 toolchain
         gcc-toolchain-10
         (list gcc-toolchain-10 "static")
@@ -523,7 +522,8 @@ inspecting signatures in Mach-O binaries.")
                  nss-certs
                  osslsigncode))
           ((string-contains target "-linux-")
-           (list (make-bitcoin-cross-toolchain target)))
+           (list bison
+                 (make-bitcoin-cross-toolchain target)))
           ((string-contains target "darwin")
            (list clang-toolchain-17 binutils cmake-minimal python-signapple zip))
           (else '())))))
