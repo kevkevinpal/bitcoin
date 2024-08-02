@@ -13,7 +13,6 @@
 #include <sync.h>
 #include <uint256.h>
 
-#include <net.h>
 #include <netaddress.h>
 
 class BanTableModel;
@@ -22,6 +21,7 @@ class OptionsModel;
 class PeerTableModel;
 class PeerTableSortProxy;
 enum class SynchronizationState;
+struct LocalServiceInfo;
 
 namespace interfaces {
 class Handler;
