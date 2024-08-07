@@ -11,6 +11,7 @@ from test_framework.authproxy import JSONRPCException
 from test_framework.descriptors import descsum_create
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
+    assert_not_equal,
     assert_equal,
     assert_fee_amount,
     assert_greater_than,
@@ -46,7 +47,7 @@ class WalletSendTest(BitcoinTestFramework):
                   inputs=None, add_inputs=None, include_unsafe=None, change_address=None, change_position=None, change_type=None,
                   include_watching=None, locktime=None, lock_unspents=None, replaceable=None, subtract_fee_from_outputs=None,
                   expect_error=None, solving_data=None, minconf=None):
-        assert (amount is None) != (data is None)
+        assert_not_equal((amount is None), (data is None))
 
         from_balance_before = from_wallet.getbalances()["mine"]["trusted"]
         if include_unsafe:
@@ -577,5 +578,39 @@ class WalletSendTest(BitcoinTestFramework):
         # but rounded to nearest integer, it should be the same as the target fee rate
         assert_equal(round(actual_fee_rate_sat_vb), target_fee_rate_sat_vb)
 
+        # Check tx creation size limits
+        self.test_weight_limits()
+
+    def test_weight_limits(self):
+        self.log.info("Test weight limits")
+
+        self.nodes[1].createwallet("test_weight_limits")
+        wallet = self.nodes[1].get_wallet_rpc("test_weight_limits")
+
+        # Generate future inputs; 272 WU per input (273 when high-s).
+        # Picking 1471 inputs will exceed the max standard tx weight.
+        outputs = []
+        for _ in range(1472):
+            outputs.append({wallet.getnewaddress(address_type="legacy"): 0.1})
+        self.nodes[0].send(outputs=outputs)
+        self.generate(self.nodes[0], 1)
+
+        # 1) Try to fund transaction only using the preset inputs
+        inputs = wallet.listunspent()
+        assert_raises_rpc_error(-4, "Transaction too large",
+                                wallet.send, outputs=[{wallet.getnewaddress(): 0.1 * 1471}], options={"inputs": inputs, "add_inputs": False})
+
+        # 2) Let the wallet fund the transaction
+        assert_raises_rpc_error(-4, "The inputs size exceeds the maximum weight. Please try sending a smaller amount or manually consolidating your wallet's UTXOs",
+                                wallet.send, outputs=[{wallet.getnewaddress(): 0.1 * 1471}])
+
+        # 3) Pre-select some inputs and let the wallet fill-up the remaining amount
+        inputs = inputs[0:1000]
+        assert_raises_rpc_error(-4, "The combination of the pre-selected inputs and the wallet automatic inputs selection exceeds the transaction maximum weight. Please try sending a smaller amount or manually consolidating your wallet's UTXOs",
+                                wallet.send, outputs=[{wallet.getnewaddress(): 0.1 * 1471}], options={"inputs": inputs, "add_inputs": True})
+
+        self.nodes[1].unloadwallet("test_weight_limits")
+
+
 if __name__ == '__main__':
-    WalletSendTest().main()
+    WalletSendTest(__file__).main()

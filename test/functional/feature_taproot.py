@@ -93,6 +93,7 @@ from test_framework.script_util import (
 )
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
+    assert_not_equal,
     assert_raises_rpc_error,
     assert_equal,
 )
@@ -231,7 +232,7 @@ def default_sigmsg(ctx):
             codeseppos = get(ctx, "codeseppos")
             leaf_ver = get(ctx, "leafversion")
             script = get(ctx, "script_taproot")
-            return TaprootSignatureMsg(tx, utxos, hashtype, idx, scriptpath=True, script=script, leaf_ver=leaf_ver, codeseparator_pos=codeseppos, annex=annex)
+            return TaprootSignatureMsg(tx, utxos, hashtype, idx, scriptpath=True, leaf_script=script, leaf_ver=leaf_ver, codeseparator_pos=codeseppos, annex=annex)
         else:
             return TaprootSignatureMsg(tx, utxos, hashtype, idx, scriptpath=False, annex=annex)
     elif mode == "witv0":
@@ -1408,10 +1409,10 @@ class TaprootTest(BitcoinTestFramework):
 
         left = done
         while left:
-            # Construct CTransaction with random nVersion, nLocktime
+            # Construct CTransaction with random version, nLocktime
             tx = CTransaction()
-            tx.nVersion = random.choice([1, 2, random.randint(-0x80000000, 0x7fffffff)])
-            min_sequence = (tx.nVersion != 1 and tx.nVersion != 0) * 0x80000000  # The minimum sequence number to disable relative locktime
+            tx.version = random.choice([1, 2, random.getrandbits(32)])
+            min_sequence = (tx.version != 1 and tx.version != 0) * 0x80000000  # The minimum sequence number to disable relative locktime
             if random.choice([True, False]):
                 tx.nLockTime = random.randrange(LOCKTIME_THRESHOLD, self.lastblocktime - 7200)  # all absolute locktimes in the past
             else:
@@ -1502,8 +1503,8 @@ class TaprootTest(BitcoinTestFramework):
                 is_standard_tx = (
                     fail_input is None  # Must be valid to be standard
                     and (all(utxo.spender.is_standard for utxo in input_utxos))  # All inputs must be standard
-                    and tx.nVersion >= 1  # The tx version must be standard
-                    and tx.nVersion <= 2)
+                    and tx.version >= 1  # The tx version must be standard
+                    and tx.version <= 2)
                 tx.rehash()
                 msg = ','.join(utxo.spender.comment + ("*" if n == fail_input else "") for n, utxo in enumerate(input_utxos))
                 if is_standard_tx:
@@ -1530,7 +1531,7 @@ class TaprootTest(BitcoinTestFramework):
         # Deterministically mine coins to OP_TRUE in block 1
         assert_equal(self.nodes[0].getblockcount(), 0)
         coinbase = CTransaction()
-        coinbase.nVersion = 1
+        coinbase.version = 1
         coinbase.vin = [CTxIn(COutPoint(0, 0xffffffff), CScript([OP_1, OP_1]), SEQUENCE_FINAL)]
         coinbase.vout = [CTxOut(5000000000, CScript([OP_1]))]
         coinbase.nLockTime = 0
@@ -1571,20 +1572,20 @@ class TaprootTest(BitcoinTestFramework):
         # Require negated taps[0]
         assert taps[0].negflag
         # Require one negated and one non-negated in taps 1 and 2.
-        assert taps[1].negflag != taps[2].negflag
+        assert_not_equal(taps[1].negflag, taps[2].negflag)
         # Require one negated and one non-negated in taps 3 and 4.
-        assert taps[3].negflag != taps[4].negflag
+        assert_not_equal(taps[3].negflag, taps[4].negflag)
         # Require one negated and one non-negated in taps 5 and 6.
-        assert taps[5].negflag != taps[6].negflag
+        assert_not_equal(taps[5].negflag, taps[6].negflag)
 
         cblks = [{leaf: get({**DEFAULT_CONTEXT, 'tap': taps[i], 'leaf': leaf}, 'controlblock') for leaf in taps[i].leaves} for i in range(7)]
         # Require one swapped and one unswapped in taps 3 and 4.
-        assert (cblks[3]['0'][33:65] < cblks[3]['1'][33:65]) != (cblks[4]['0'][33:65] < cblks[4]['1'][33:65])
+        assert_not_equal((cblks[3]['0'][33:65] < cblks[3]['1'][33:65]), (cblks[4]['0'][33:65] < cblks[4]['1'][33:65]))
         # Require one swapped and one unswapped in taps 5 and 6, both at the top and child level.
-        assert (cblks[5]['0'][33:65] < cblks[5]['1'][65:]) != (cblks[6]['0'][33:65] < cblks[6]['1'][65:])
-        assert (cblks[5]['1'][33:65] < cblks[5]['2'][33:65]) != (cblks[6]['1'][33:65] < cblks[6]['2'][33:65])
+        assert_not_equal((cblks[5]['0'][33:65] < cblks[5]['1'][65:]), (cblks[6]['0'][33:65] < cblks[6]['1'][65:]))
+        assert_not_equal((cblks[5]['1'][33:65] < cblks[5]['2'][33:65]), (cblks[6]['1'][33:65] < cblks[6]['2'][33:65]))
         # Require within taps 5 (and thus also 6) that one level is swapped and the other is not.
-        assert (cblks[5]['0'][33:65] < cblks[5]['1'][65:]) != (cblks[5]['1'][33:65] < cblks[5]['2'][33:65])
+        assert_not_equal((cblks[5]['0'][33:65] < cblks[5]['1'][65:]), (cblks[5]['1'][33:65] < cblks[5]['2'][33:65]))
 
         # Compute a deterministic set of scriptPubKeys
         tap_spks = []
@@ -1622,7 +1623,7 @@ class TaprootTest(BitcoinTestFramework):
         for i, spk in enumerate(old_spks + tap_spks):
             val = 42000000 * (i + 7)
             tx = CTransaction()
-            tx.nVersion = 1
+            tx.version = 1
             tx.vin = [CTxIn(COutPoint(lasttxid, i & 1), CScript([]), SEQUENCE_FINAL)]
             tx.vout = [CTxOut(val, spk), CTxOut(amount - val, CScript([OP_1]))]
             if i & 1:
@@ -1679,7 +1680,7 @@ class TaprootTest(BitcoinTestFramework):
 
         # Construct a deterministic transaction spending all outputs created above.
         tx = CTransaction()
-        tx.nVersion = 2
+        tx.version = 2
         tx.vin = []
         inputs = []
         input_spks = [tap_spks[0], tap_spks[1], old_spks[0], tap_spks[2], tap_spks[5], old_spks[2], tap_spks[6], tap_spks[3], tap_spks[4]]
@@ -1766,4 +1767,4 @@ class TaprootTest(BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-    TaprootTest().main()
+    TaprootTest(__file__).main()

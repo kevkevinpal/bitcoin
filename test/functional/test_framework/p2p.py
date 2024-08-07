@@ -77,6 +77,7 @@ from test_framework.messages import (
     sha256,
 )
 from test_framework.util import (
+    assert_not_equal,
     MAX_NODES,
     p2p_port,
     wait_until_helper_internal,
@@ -223,6 +224,7 @@ class P2PConnection(asyncio.Protocol):
         # send the initial handshake immediately
         if self.supports_v2_p2p and self.v2_state.initiating and not self.v2_state.tried_v2_handshake:
             send_handshake_bytes = self.v2_state.initiate_v2_handshake()
+            logger.debug(f"sending {len(self.v2_state.sent_garbage)} bytes of garbage data")
             self.send_raw_message(send_handshake_bytes)
         # for v1 outbound connections, send version message immediately after opening
         # (for v2 outbound connections, send it after the initial v2 handshake)
@@ -262,6 +264,7 @@ class P2PConnection(asyncio.Protocol):
                     self.v2_state = None
                     return
                 elif send_handshake_bytes:
+                    logger.debug(f"sending {len(self.v2_state.sent_garbage)} bytes of garbage data")
                     self.send_raw_message(send_handshake_bytes)
                 elif send_handshake_bytes == b"":
                     return  # only after send_handshake_bytes are sent can `complete_handshake()` be done
@@ -411,7 +414,7 @@ class P2PConnection(asyncio.Protocol):
             tmsg = self.magic_bytes
             tmsg += msgtype
             tmsg += b"\x00" * (12 - len(msgtype))
-            tmsg += struct.pack("<I", len(data))
+            tmsg += len(data).to_bytes(4, "little")
             th = sha256(data)
             h = sha256(th)
             tmsg += h[:4]
@@ -882,7 +885,7 @@ class P2PDataStore(P2PInterface):
             if success:
                 self.wait_until(lambda: node.getbestblockhash() == blocks[-1].hash, timeout=timeout)
             else:
-                assert node.getbestblockhash() != blocks[-1].hash
+                assert_not_equal(node.getbestblockhash(), blocks[-1].hash)
 
     def send_txs_and_test(self, txs, node, *, success=True, expect_disconnect=False, reject_reason=None):
         """Send txs to test node and test whether they're accepted to the mempool.

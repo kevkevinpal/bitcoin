@@ -26,6 +26,10 @@ class LoadblockTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 2
         self.supports_cli = False
+        self.extra_args = [
+            ["-blocksxor=0"],  # TODO: The linearize scripts should be adjusted to apply any XOR
+            [],
+        ]
 
     def run_test(self):
         self.nodes[1].setnetworkactive(state=False)
@@ -80,4 +84,4 @@ class LoadblockTest(BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-    LoadblockTest().main()
+    LoadblockTest(__file__).main()

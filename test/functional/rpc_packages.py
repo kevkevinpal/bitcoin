@@ -8,6 +8,9 @@ from decimal import Decimal
 import random
 
 from test_framework.blocktools import COINBASE_MATURITY
+from test_framework.mempool_util import (
+    fill_mempool,
+)
 from test_framework.messages import (
     MAX_BIP125_RBF_SEQUENCE,
     tx_from_hex,
@@ -18,9 +21,9 @@ from test_framework.util import (
     assert_equal,
     assert_fee_amount,
     assert_raises_rpc_error,
-    fill_mempool,
 )
 from test_framework.wallet import (
+    COIN,
     DEFAULT_FEE,
     MiniWallet,
 )
@@ -240,6 +243,37 @@ class RPCPackagesTest(BitcoinTestFramework):
             {"txid": tx2["txid"], "wtxid": tx2["wtxid"], "package-error": "conflict-in-package"}
         ])
 
+        # Add a child that spends both at high feerate to submit via submitpackage
+        tx_child = self.wallet.create_self_transfer_multi(
+            fee_per_output=int(DEFAULT_FEE * 5 * COIN),
+            utxos_to_spend=[tx1["new_utxo"], tx2["new_utxo"]],
+        )
+
+        testres = node.testmempoolaccept([tx1["hex"], tx2["hex"], tx_child["hex"]])
+
+        assert_equal(testres, [
+            {"txid": tx1["txid"], "wtxid": tx1["wtxid"], "package-error": "conflict-in-package"},
+            {"txid": tx2["txid"], "wtxid": tx2["wtxid"], "package-error": "conflict-in-package"},
+            {"txid": tx_child["txid"], "wtxid": tx_child["wtxid"], "package-error": "conflict-in-package"}
+        ])
+
+        submitres = node.submitpackage([tx1["hex"], tx2["hex"], tx_child["hex"]])
+        assert_equal(submitres, {'package_msg': 'conflict-in-package', 'tx-results': {}, 'replaced-transactions': []})
+
+        # Submit tx1 to mempool, then try the same package again
+        node.sendrawtransaction(tx1["hex"])
+
+        submitres = node.submitpackage([tx1["hex"], tx2["hex"], tx_child["hex"]])
+        assert_equal(submitres, {'package_msg': 'conflict-in-package', 'tx-results': {}, 'replaced-transactions': []})
+        assert tx_child["txid"] not in node.getrawmempool()
+
+        # ... and without the in-mempool ancestor tx1 included in the call
+        submitres = node.submitpackage([tx2["hex"], tx_child["hex"]])
+        assert_equal(submitres, {'package_msg': 'package-not-child-with-unconfirmed-parents', 'tx-results': {}, 'replaced-transactions': []})
+
+        # Regardless of error type, the child can never enter the mempool
+        assert tx_child["txid"] not in node.getrawmempool()
+
     def test_rbf(self):
         node = self.nodes[0]
 
@@ -360,7 +394,7 @@ class RPCPackagesTest(BitcoinTestFramework):
         peer = node.add_p2p_connection(P2PTxInvStore())
         txs = self.wallet.create_self_transfer_chain(chain_length=2)
         bad_child = tx_from_hex(txs[1]["hex"])
-        bad_child.nVersion = -1
+        bad_child.version = 0xffffffff
         hex_partial_acceptance = [txs[0]["hex"], bad_child.serialize().hex()]
         res = node.submitpackage(hex_partial_acceptance)
         assert_equal(res["package_msg"], "transaction failed")
@@ -398,7 +432,7 @@ class RPCPackagesTest(BitcoinTestFramework):
         ])
         self.wallet.rescan_utxos()
 
-        fill_mempool(self, node, self.wallet)
+        fill_mempool(self, node)
 
         minrelay = node.getmempoolinfo()["minrelaytxfee"]
         parent = self.wallet.create_self_transfer(
@@ -455,4 +489,4 @@ class RPCPackagesTest(BitcoinTestFramework):
         assert_equal(node.getrawmempool(), [chained_txns_burn[0]["txid"]])
 
 if __name__ == "__main__":
-    RPCPackagesTest().main()
+    RPCPackagesTest(__file__).main()

@@ -30,8 +30,7 @@ BOOST_AUTO_TEST_CASE(xor_file)
     }
     {
 #ifdef __MINGW64__
-        // Our usage of mingw-w64 and the msvcrt runtime does not support
-        // the x modifier for the _wfopen().
+        // Temporary workaround for https://github.com/bitcoin/bitcoin/issues/30210
         const char* mode = "wb";
 #else
         const char* mode = "wbx";
@@ -436,7 +435,7 @@ BOOST_AUTO_TEST_CASE(streams_buffered_file_skip)
 BOOST_AUTO_TEST_CASE(streams_buffered_file_rand)
 {
     // Make this test deterministic.
-    SeedInsecureRand(SeedRand::ZEROS);
+    SeedRandomForTest(SeedRand::ZEROS);
 
     fs::path streams_test_filename = m_args.GetDataDirBase() / "streams_test_tmp";
     for (int rep = 0; rep < 50; ++rep) {
