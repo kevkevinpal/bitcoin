@@ -51,7 +51,7 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
 {
     switch (type) {
     case OutputType::LEGACY: return PKHash(key);
-    case OutputType::P2SH_SEGWIT:
+												case OutputType::P2SH_SEGWIT:
     case OutputType::BECH32: {
         if (!key.IsCompressed()) return PKHash(key);
         CTxDestination witdest = WitnessV0KeyHash(key);
@@ -102,6 +102,7 @@ CTxDestination AddAndGetDestinationForScript(FillableSigningProvider& keystore, 
         }
     }
     case OutputType::BECH32M:
+														 
     case OutputType::UNKNOWN: {} // This function should not be used for BECH32M or UNKNOWN, so let it assert
     } // no default case, so the compiler can warn about missing cases
     assert(false);
