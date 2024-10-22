@@ -129,15 +129,21 @@ class GetOrphanTxsTest(BitcoinTestFramework):
 
     def test_max_orphan_amount(self):
         self.log.info("Check that once we reach the max orphan amount we dont get any new orphans")
+        self.restart_node(0, extra_args=["-persistmempool=0"])
         node = self.nodes[0]
 
         peer_1 = node.add_p2p_connection(P2PInterface())
 
+        self.log.info("Check that orphanage is empty on start of test")
+        self.wait_until(lambda: len(node.getorphantxs()) == 0)
+
         self.log.info("Filling up orphanage with " + str(MAX_ORPHANS) + "(MAX_ORPHANS) orphans")
         orphans = []
+        parent_orphans = []
         for _ in range(MAX_ORPHANS):
             tx_parent_1 = self.wallet.create_self_transfer()
             tx_child_1 = self.wallet.create_self_transfer(utxo_to_spend=tx_parent_1["new_utxo"])
+            parent_orphans.append(tx_parent_1["tx"])
             orphans.append(tx_child_1["tx"])
             peer_1.send_message(msg_tx(tx_child_1["tx"]))
 
@@ -152,8 +158,14 @@ class GetOrphanTxsTest(BitcoinTestFramework):
         tx_parent_1 = self.wallet.create_self_transfer()
         tx_child_1 = self.wallet.create_self_transfer(utxo_to_spend=tx_parent_1["new_utxo"])
         peer_1.send_and_ping(msg_tx(tx_child_1["tx"]))
+        parent_orphans.append(tx_parent_1["tx"])
         orphanage = node.getorphantxs()
         assert_equal(len(orphanage), MAX_ORPHANS)
+
+        self.log.info("Clearing the orphanage")
+        for index, parent_orphan in enumerate(parent_orphans):
+            peer_1.send_and_ping(msg_tx(parent_orphan))
+        assert_equal(len(node.getorphantxs()),0)
 
 if __name__ == '__main__':
     GetOrphanTxsTest(__file__).main()
