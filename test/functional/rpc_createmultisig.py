@@ -17,6 +17,7 @@ from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_raises_rpc_error,
     assert_equal,
+    assert_greater_than,
 )
 from test_framework.wallet_util import generate_keypair
 from test_framework.wallet import (
@@ -143,7 +144,8 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
         balw = self.wallet.get_balance()
 
         height = node0.getblockchaininfo()["blocks"]
-        assert 150 < height < 350
+        assert_greater_than(350, height)
+        assert_greater_than(height, 150)
         total = 149 * 50 + (height - 149 - 100) * 25
         assert bal1 == 0
         assert bal2 == self.moved
