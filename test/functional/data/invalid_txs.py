@@ -26,12 +26,14 @@ from test_framework.messages import (
     COutPoint,
     CTransaction,
     CTxIn,
+    CTxInWitness,
     CTxOut,
     MAX_MONEY,
     SEQUENCE_FINAL,
 )
 from test_framework.blocktools import create_tx_with_script, MAX_BLOCK_SIGOPS
 from test_framework.script import (
+    OP_TRUE,
     CScript,
     OP_0,
     OP_2DIV,
@@ -124,6 +126,25 @@ class SizeTooSmall(BadTxTemplate):
         tx = CTransaction()
         tx.vin.append(self.valid_txin)
         tx.vout.append(CTxOut(0, CScript([OP_RETURN] + ([OP_0] * (MIN_PADDING - 2)))))
+        assert len(tx.serialize_without_witness()) == 64
+        assert MIN_STANDARD_TX_NONWITNESS_SIZE - 1 == 64
+        tx.calc_sha256()
+        return tx
+
+class SizeExactly64WithWitness(BadTxTemplate):
+    expect_disconnect = False
+    valid_in_block = False
+    block_reject_reason = "mandatory-script-verify-flag-failed (Witness provided for non-witness script)"
+
+    def get_tx(self):
+        tx = CTransaction()
+        tx.vin.append(self.valid_txin)
+        tx.vout.append(CTxOut(0, CScript([OP_RETURN] + ([OP_0] * (MIN_PADDING - 2)))))
+        tx.wit.vtxinwit = [CTxInWitness()]
+        # add witness to make sure we still reject a block that is more than
+        # 64 bytes on the wire, but is exactly 64 bytes when serialized
+        # without it's witness
+        tx.wit.vtxinwit[0].scriptWitness.stack = [CScript([OP_TRUE])]
         assert len(tx.serialize_without_witness()) == 64
         assert MIN_STANDARD_TX_NONWITNESS_SIZE - 1 == 64
         tx.calc_sha256()
