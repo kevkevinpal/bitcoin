@@ -2,13 +2,15 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or https://opensource.org/license/mit/.
 
+include(CheckSourceCompilesWithFlags)
+
 # Check for clmul instructions support.
 if(MSVC)
-  set(CLMUL_CXXFLAGS)
+  set(CLMUL_CXXFLAGS "")
 else()
   set(CLMUL_CXXFLAGS -mpclmul)
 endif()
-check_cxx_source_compiles_with_flags("${CLMUL_CXXFLAGS}" "
+check_cxx_source_compiles_with_flags("
   #include <immintrin.h>
   #include <cstdint>
 
@@ -22,6 +24,7 @@ check_cxx_source_compiles_with_flags("${CLMUL_CXXFLAGS}" "
     return e == 0;
   }
   " HAVE_CLMUL
+  CXXFLAGS ${CLMUL_CXXFLAGS}
 )
 
 add_library(minisketch_common INTERFACE)
@@ -73,6 +76,9 @@ add_library(minisketch STATIC EXCLUDE_FROM_ALL
   ${PROJECT_SOURCE_DIR}/src/minisketch/src/fields/generic_7bytes.cpp
   ${PROJECT_SOURCE_DIR}/src/minisketch/src/fields/generic_8bytes.cpp
 )
+
+# Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/24058
+set_target_properties(minisketch PROPERTIES OPTIMIZE_DEPENDENCIES OFF)
 
 target_include_directories(minisketch
   PUBLIC

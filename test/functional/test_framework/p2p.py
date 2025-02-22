@@ -77,6 +77,7 @@ from test_framework.messages import (
     sha256,
 )
 from test_framework.util import (
+    assert_not_equal,
     MAX_NODES,
     p2p_port,
     wait_until_helper_internal,
@@ -891,7 +892,7 @@ class P2PDataStore(P2PInterface):
             if success:
                 self.wait_until(lambda: node.getbestblockhash() == blocks[-1].hash, timeout=timeout)
             else:
-                assert node.getbestblockhash() != blocks[-1].hash
+                assert_not_equal(node.getbestblockhash(), blocks[-1].hash)
 
     def send_txs_and_test(self, txs, node, *, success=True, expect_disconnect=False, reject_reason=None):
         """Send txs to test node and test whether they're accepted to the mempool.
@@ -928,8 +929,8 @@ class P2PDataStore(P2PInterface):
 
 class P2PTxInvStore(P2PInterface):
     """A P2PInterface which stores a count of how many times each txid has been announced."""
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.tx_invs_received = defaultdict(int)
 
     def on_inv(self, message):
