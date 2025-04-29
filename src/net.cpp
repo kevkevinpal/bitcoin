@@ -2172,7 +2172,9 @@ void CConnman::SocketHandlerConnected(const std::vector<std::shared_ptr<CNode>>&
                 RecordBytesRecv(nBytes);
                 if (notify) {
                     std::list<CNetMessage> complete_messages = pnode->GetCompleteMessages();
-                    pnode->MarkReceivedMsgsForProcessing(std::move(complete_messages));
+                    if (!pnode->MarkReceivedMsgsForProcessing(std::move(complete_messages))) {
+                        pnode->fPauseRecv = true;
+                    }
                     WakeMessageHandler();
                 }
             }
@@ -3851,7 +3853,7 @@ CNode::CNode(NodeId idIn,
     }
 }
 
-void CNode::MarkReceivedMsgsForProcessing(std::list<CNetMessage> messages)
+bool CNode::MarkReceivedMsgsForProcessing(std::list<CNetMessage> messages)
 {
     AssertLockNotHeld(m_msg_process_queue_mutex);
 
@@ -3865,7 +3867,7 @@ void CNode::MarkReceivedMsgsForProcessing(std::list<CNetMessage> messages)
     LOCK(m_msg_process_queue_mutex);
     m_msg_process_queue.splice(m_msg_process_queue.end(), messages);
     m_msg_process_queue_size += nSizeAdded;
-    fPauseRecv = m_msg_process_queue_size > m_recv_flood_size;
+    return m_msg_process_queue_size <= m_recv_flood_size;
 }
 
 std::optional<std::pair<CNetMessage, bool>> CNode::PollMessage()
