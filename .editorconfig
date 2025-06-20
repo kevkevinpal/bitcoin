@@ -24,3 +24,4 @@ indent_style = tab
 # CMake files
 [{CMakeLists.txt,*.cmake,*.cmake.in}]
 indent_size = 2
+
