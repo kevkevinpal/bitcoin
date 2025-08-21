@@ -271,6 +271,18 @@ void ClearLocal()
     return mapLocalHost.clear();
 }
 
+std::optional<CService> CConnman::GetLocalAddrForPeer(NodeId id, const CService& addr_local)
+{
+    std::shared_ptr<CNode> node;
+    {
+        LOCK(m_nodes_mutex);
+        auto it = std::find_if(m_nodes.begin(), m_nodes.end(), [&id](const auto& node) { return node->GetId() == id; });
+        if (it == m_nodes.end()) return std::nullopt;
+        node = *it;
+    }
+    return ::GetLocalAddrForPeer(*node, addr_local);
+}
+
 // learn a new local address
 bool AddLocal(const CService& addr_, int nScore)
 {
