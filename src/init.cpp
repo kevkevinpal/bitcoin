@@ -315,6 +315,8 @@ void Shutdown(NodeContext& node)
     if (node.peerman && node.validation_signals) node.validation_signals->UnregisterValidationInterface(node.peerman.get());
     if (node.connman) node.connman->Stop();
 
+    if (node.peerman) node.peerman->Stop();
+
     StopTorControl();
 
     if (node.background_init_thread.joinable()) node.background_init_thread.join();
@@ -2187,6 +2189,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
                     conflict->ToStringAddrPort()));
     }
 
+    if (node.peerman) node.peerman->Start();
     if (!node.connman->Start(scheduler, connOptions)) {
         return false;
     }
