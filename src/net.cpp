@@ -2972,7 +2972,7 @@ void CConnman::ThreadMessageHandler()
 {
     LOCK(NetEventsInterface::g_msgproc_mutex);
 
-    while (!flagInterruptMsgProc)
+    while (!m_msgproc->Interrupted())
     {
         bool fMoreWork = false;
 
@@ -2989,14 +2989,14 @@ void CConnman::ThreadMessageHandler()
                 continue;
             NodeId node_id = pnode->GetId();
             // Receive messages
-            bool fMoreNodeWork = m_msgproc->ProcessMessages(node_id, flagInterruptMsgProc);
+            bool fMoreNodeWork = m_msgproc->ProcessMessages(node_id);
             fMoreWork |= (fMoreNodeWork && !pnode->fPauseSend);
-            if (flagInterruptMsgProc)
+            if (m_msgproc->Interrupted())
                 return;
             // Send messages
             m_msgproc->SendMessages(node_id);
 
-            if (flagInterruptMsgProc)
+            if (m_msgproc->Interrupted())
                 return;
         }
 
@@ -3286,7 +3286,6 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
     //
     assert(m_msgproc);
     interruptNet.reset();
-    flagInterruptMsgProc = false;
 
     {
         LOCK(mutexMsgProc);
@@ -3357,7 +3356,6 @@ void CConnman::Interrupt()
 {
     {
         LOCK(mutexMsgProc);
-        flagInterruptMsgProc = true;
     }
     condMsgProc.notify_all();
 
