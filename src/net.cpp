@@ -107,7 +107,6 @@ static const uint64_t SELECT_TIMEOUT_MILLISECONDS = 50;
 const std::string NET_MESSAGE_TYPE_OTHER = "*other*";
 
 static const uint64_t RANDOMIZER_ID_NETGROUP = 0x6c0edd8036ef4036ULL; // SHA256("netgroup")[0:8]
-static const uint64_t RANDOMIZER_ID_LOCALHOSTNONCE = 0xd93e69e2bbfa5735ULL; // SHA256("localhostnonce")[0:8]
 static const uint64_t RANDOMIZER_ID_ADDRCACHE = 0x1cf2e4ddd306dda9ULL; // SHA256("addrcache")[0:8]
 //
 // Global state variables
@@ -527,14 +526,12 @@ std::shared_ptr<CNode> CConnman::ConnectNode(CAddress addrConnect, const char *p
 
         // Add node
         NodeId id = GetNewNodeId();
-        uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
         if (!addr_bind.IsValid()) {
             addr_bind = GetBindAddress(*sock);
         }
         auto pnode = std::make_shared<CNode>(id,
                                 std::move(sock),
                                 target_addr,
-                                nonce,
                                 addr_bind,
                                 pszDest ? pszDest : "",
                                 conn_type,
@@ -1771,7 +1768,6 @@ void CConnman::CreateNodeFromAcceptedSocket(std::unique_ptr<Sock>&& sock,
     }
 
     NodeId id = GetNewNodeId();
-    uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
 
     // The V2Transport transparently falls back to V1 behavior when an incoming V1 connection is
     // detected, so use it whenever we signal NODE_P2P_V2.
@@ -1780,7 +1776,6 @@ void CConnman::CreateNodeFromAcceptedSocket(std::unique_ptr<Sock>&& sock,
     auto pnode = std::make_shared<CNode>(id,
                              std::move(sock),
                              CAddress{addr, NODE_NONE},
-                             nonce,
                              addr_bind,
                              /*addrNameIn=*/"",
                              ConnectionType::INBOUND,
@@ -1796,7 +1791,6 @@ void CConnman::CreateNodeFromAcceptedSocket(std::unique_ptr<Sock>&& sock,
         .addr=pnode->addr,
         .addr_name=pnode->m_addr_name,
         .permission_flags=pnode->m_permission_flags,
-        .local_nonce=pnode->GetLocalNonce(),
         .connected=pnode->m_connected,
         .transport=pnode->m_transport->GetInfo().transport_type,
         .inbound_onion=pnode->m_inbound_onion,
@@ -2925,7 +2919,6 @@ void CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFai
         .addr=pnode->addr,
         .addr_name=pnode->m_addr_name,
         .permission_flags=pnode->m_permission_flags,
-        .local_nonce=pnode->GetLocalNonce(),
         .connected=pnode->m_connected,
         .transport=pnode->m_transport->GetInfo().transport_type,
         .inbound_onion=pnode->m_inbound_onion,
@@ -3677,7 +3670,6 @@ static std::unique_ptr<Transport> MakeTransport(NodeId id, bool use_v2transport,
 CNode::CNode(NodeId idIn,
              std::shared_ptr<Sock> sock,
              const CAddress& addrIn,
-             uint64_t nLocalHostNonceIn,
              const CService& addrBindIn,
              const std::string& addrNameIn,
              ConnectionType conn_type_in,
@@ -3694,7 +3686,6 @@ CNode::CNode(NodeId idIn,
       m_inbound_onion{inbound_onion},
       m_conn_type{conn_type_in},
       id{idIn},
-      nLocalHostNonce{nLocalHostNonceIn},
       m_recv_flood_size{node_opts.recv_flood_size},
       m_i2p_sam_session{std::move(node_opts.i2p_sam_session)}
 {

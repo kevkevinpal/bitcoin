@@ -760,7 +760,6 @@ public:
     CNode(NodeId id,
           std::shared_ptr<Sock> sock,
           const CAddress& addrIn,
-          uint64_t nLocalHostNonceIn,
           const CService& addrBindIn,
           const std::string& addrNameIn,
           ConnectionType conn_type_in,
@@ -771,10 +770,6 @@ public:
 
     NodeId GetId() const {
         return id;
-    }
-
-    uint64_t GetLocalNonce() const {
-        return nLocalHostNonce;
     }
 
     /**
@@ -813,7 +808,6 @@ public:
     std::list<CNetMessage> GetCompleteMessages();
 private:
     const NodeId id;
-    const uint64_t nLocalHostNonce;
 
     const size_t m_recv_flood_size;
     std::list<CNetMessage> vRecvMsg; // Used only by SocketHandler thread
@@ -845,7 +839,6 @@ struct PeerOptions
     CAddress addr;
     std::string addr_name;
     NetPermissionFlags permission_flags;
-    uint64_t local_nonce;
     std::chrono::seconds connected;
     TransportProtocolType transport;
     bool inbound_onion;
