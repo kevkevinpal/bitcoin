@@ -999,7 +999,6 @@ public:
 
     void Interrupt();
     bool GetNetworkActive() const { return fNetworkActive; };
-    bool GetUseAddrmanOutgoing() const { return m_use_addrman_outgoing; };
     void SetNetworkActive(bool active);
     void OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CountingSemaphoreGrant<>&& grant_outbound, const char* strDest, ConnectionType conn_type, bool use_v2transport) EXCLUSIVE_LOCKS_REQUIRED(!m_unused_i2p_sessions_mutex);
     void ASMapHealthCheck();
@@ -1046,7 +1045,7 @@ public:
     std::vector<CAddress> GetAddresses(NodeId id, size_t max_addresses, size_t max_pct);
     // This allows temporarily exceeding m_max_outbound_full_relay, with the goal of finding
     // a peer that is better than all our current peers.
-    void SetTryNewOutboundPeer(bool flag);
+    bool SetTryNewOutboundPeer(bool flag);
     bool GetTryNewOutboundPeer() const;
 
     void StartExtraBlockRelayPeers();
