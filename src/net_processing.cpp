@@ -1038,6 +1038,8 @@ private:
     /** SipHasher seeds for deterministic randomness */
     const uint64_t m_seed0, m_seed1;
 
+    PeerCountLimits m_peer_count_limits;
+
     /** Have we requested this block from a peer */
     bool IsBlockRequested(const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
@@ -1277,7 +1279,7 @@ PeerManagerImpl::~PeerManagerImpl()
 
 int PeerManagerImpl::GetExtraFullOutboundCount() const
 {
-    return std::max(GetFullOutboundConnCount() - m_connman.GetMaxOutboundFullRelay(), 0);
+    return std::max(GetFullOutboundConnCount() - m_peer_count_limits.m_max_outbound_full_relay, 0);
 }
 
 int PeerManagerImpl::GetExtraBlockRelayCount() const
@@ -1291,7 +1293,7 @@ int PeerManagerImpl::GetExtraBlockRelayCount() const
             }
         }
     }
-    return std::max(block_relay_peers - m_connman.GetMaxOutboundBlockRelay(), 0);
+    return std::max(block_relay_peers - m_peer_count_limits.m_max_outbound_block_relay, 0);
 }
 
 void PeerManagerImpl::MarkSendBufferFull(NodeId id, bool full)
@@ -2278,6 +2280,7 @@ PeerManagerImpl::PeerManagerImpl(uint64_t seed0, uint64_t seed1, CConnman& connm
         m_txreconciliation = std::make_unique<TxReconciliationTracker>(TXRECONCILIATION_VERSION);
     }
     m_local_services = m_opts.m_local_services;
+    m_peer_count_limits = m_opts.m_peer_count_limits;
 }
 
 void PeerManagerImpl::StartScheduledTasks(CScheduler& scheduler)
