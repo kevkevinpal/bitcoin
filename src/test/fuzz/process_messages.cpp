@@ -70,7 +70,7 @@ FUZZ_TARGET(process_messages, .init = initialize_process_messages)
     NetGroupManager netgroupman{{}};
     AddrMan addrman{netgroupman, /*deterministic=*/true, /*consistency_check_ratio=*/0};
     EvictionManager evictionman{};
-    auto peerman = PeerManager::make(connman, addrman, evictionman,
+    auto peerman = PeerManager::make(0x1338, 0x1338, connman, addrman, evictionman,
                                      /*banman=*/nullptr, chainman,
                                      *g_setup->m_node.mempool, warnings,
                                      PeerManager::Options{
