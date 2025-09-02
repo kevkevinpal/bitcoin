@@ -845,6 +845,7 @@ struct PeerOptions
     TransportProtocolType transport;
     bool inbound_onion;
     uint32_t mapped_as;
+    uint64_t keyed_net_group;
 };
 
 /**
