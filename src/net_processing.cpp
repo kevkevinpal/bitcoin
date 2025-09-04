@@ -1123,7 +1123,7 @@ private:
         LOCKS_EXCLUDED(::cs_main);
 
     /** Process a new block. Perform any post-processing housekeeping */
-    void ProcessBlock(NodeId id, const std::shared_ptr<const CBlock>& block, bool force_processing, bool min_pow_checked);
+    void ProcessBlock(Peer& peer, const std::shared_ptr<const CBlock>& block, bool force_processing, bool min_pow_checked);
 
     /** Process compact block txns  */
     void ProcessCompactBlockTxns(Peer& peer, const BlockTransactions& block_transactions)
@@ -3752,12 +3752,12 @@ void PeerManagerImpl::ProcessGetCFCheckPt(Peer& peer, DataStream& vRecv)
               headers);
 }
 
-void PeerManagerImpl::ProcessBlock(NodeId id, const std::shared_ptr<const CBlock>& block, bool force_processing, bool min_pow_checked)
+void PeerManagerImpl::ProcessBlock(Peer& peer, const std::shared_ptr<const CBlock>& block, bool force_processing, bool min_pow_checked)
 {
     bool new_block{false};
     m_chainman.ProcessNewBlock(block, force_processing, min_pow_checked, &new_block);
     if (new_block) {
-        m_evictionman.UpdateLastBlockTime(id, GetTime<std::chrono::seconds>());
+        m_evictionman.UpdateLastBlockTime(peer.m_id, GetTime<std::chrono::seconds>());
         // In case this block came from a different peer than we requested
         // from, we can erase the block request now anyway (as we just stored
         // this block to disk).
@@ -3852,7 +3852,7 @@ void PeerManagerImpl::ProcessCompactBlockTxns(Peer& peer, const BlockTransaction
         // disk-space attacks), but this should be safe due to the
         // protections in the compact block handler -- see related comment
         // in compact block optimistic reconstruction handling.
-        ProcessBlock(node_id, pblock, /*force_processing=*/true, /*min_pow_checked=*/true);
+        ProcessBlock(peer, pblock, /*force_processing=*/true, /*min_pow_checked=*/true);
     }
     return;
 }
@@ -5034,7 +5034,7 @@ void PeerManagerImpl::ProcessMessage(Peer& p, const std::string& msg_type, DataS
             // we have a chain with at least the minimum chain work), and we ignore
             // compact blocks with less work than our tip, it is safe to treat
             // reconstructed compact blocks as having been requested.
-            ProcessBlock(node_id, pblock, /*force_processing=*/true, /*min_pow_checked=*/true);
+            ProcessBlock(*peer, pblock, /*force_processing=*/true, /*min_pow_checked=*/true);
             LOCK(cs_main); // hold cs_main for CBlockIndex::IsValid()
             if (pindex->IsValid(BLOCK_VALID_TRANSACTIONS)) {
                 // Clear download state for this block, which is in
@@ -5145,7 +5145,7 @@ void PeerManagerImpl::ProcessMessage(Peer& p, const std::string& msg_type, DataS
                 min_pow_checked = true;
             }
         }
-        ProcessBlock(node_id, pblock, forceProcessing, min_pow_checked);
+        ProcessBlock(*peer, pblock, forceProcessing, min_pow_checked);
         return;
     }
 
