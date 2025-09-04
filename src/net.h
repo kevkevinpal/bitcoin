@@ -195,8 +195,6 @@ public:
     NodeId nodeid;
     std::chrono::seconds m_last_send;
     std::chrono::seconds m_last_recv;
-    std::chrono::seconds m_last_tx_time;
-    std::chrono::seconds m_last_block_time;
     std::chrono::seconds m_connected;
     std::string m_addr_name;
     bool fInbound;
@@ -206,7 +204,6 @@ public:
     uint64_t nRecvBytes;
     mapMsgTypeSize mapRecvBytesPerMsgType;
     NetPermissionFlags m_permission_flags;
-    std::chrono::microseconds m_min_ping_time;
     // Address of this peer
     CAddress addr;
     // Bind address of our side of the connection
