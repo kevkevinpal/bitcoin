@@ -7,7 +7,7 @@
 #define BITCOIN_NET_PROCESSING_H
 
 #include <consensus/amount.h>
-#include <net.h>
+#include <interfaces/net.h>
 #include <node/txorphanage.h>
 #include <peercountlimits.h>
 #include <protocol.h>
