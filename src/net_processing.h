@@ -9,6 +9,7 @@
 #include <consensus/amount.h>
 #include <net.h>
 #include <node/txorphanage.h>
+#include <peercountlimits.h>
 #include <protocol.h>
 #include <threadsafety.h>
 #include <validationinterface.h>
