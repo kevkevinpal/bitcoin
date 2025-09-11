@@ -780,6 +780,7 @@ struct PeerOptions
     uint32_t mapped_as;
     uint64_t keyed_net_group;
     Network connected_through_net;
+    bool send_local_address;
 };
 
 /**
