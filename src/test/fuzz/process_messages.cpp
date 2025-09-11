@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <clientversion.h>
 #include <consensus/consensus.h>
 #include <net.h>
 #include <net_processing.h>
@@ -76,6 +77,7 @@ FUZZ_TARGET(process_messages, .init = initialize_process_messages)
                                      PeerManager::Options{
                                          .reconcile_txs = true,
                                          .deterministic_rng = true,
+                                         .strSubVersion = FormatSubVersion(UA_NAME, CLIENT_VERSION, {})
                                      });
     connman.SetMsgProc(peerman.get());
 
