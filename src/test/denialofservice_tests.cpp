@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
 
     auto evictionman = std::make_unique<EvictionManager>();
     auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman);
-    auto peerLogic = PeerManager::make(0x1338, 0x1338, *connman, *m_node.addrman, *evictionman, nullptr,
+    auto peerLogic = PeerManager::make(0x1338, 0x1338, connman.get(), *m_node.addrman, *evictionman, nullptr,
                                        *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
 
     {
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
     BOOST_CHECK(peerman.SendMessages(dummyNode1.GetId())); // should result in disconnect
     BOOST_CHECK(dummyNode1.fDisconnect == true);
 
-    peerman.MarkNodeDisconnected(dummyNode1.GetId());
+    peerman.markNodeDisconnected(dummyNode1.GetId());
 }
 
 struct OutboundTest : TestingSetup {
@@ -170,7 +170,7 @@ BOOST_FIXTURE_TEST_CASE(stale_tip_peer_management, OutboundTest)
     NodeId id{0};
     auto evictionman = std::make_unique<EvictionManager>();
     auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman);
-    auto peerLogic = PeerManager::make(0x1338, 0x1338, *connman, *m_node.addrman, *evictionman, nullptr, *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
+    auto peerLogic = PeerManager::make(0x1338, 0x1338, connman.get(), *m_node.addrman, *evictionman, nullptr, *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
 
     constexpr int max_outbound_full_relay = MAX_OUTBOUND_FULL_RELAY_CONNECTIONS;
     CConnman::Options options;
@@ -261,7 +261,7 @@ BOOST_FIXTURE_TEST_CASE(stale_tip_peer_management, OutboundTest)
     BOOST_CHECK(vNodes.back()->fDisconnect == true);
 
     for (const auto& node : vNodes) {
-        peerLogic->MarkNodeDisconnected(node->GetId());
+        peerLogic->markNodeDisconnected(node->GetId());
     }
 
     connman->ClearTestNodes();
@@ -272,7 +272,7 @@ BOOST_FIXTURE_TEST_CASE(block_relay_only_eviction, OutboundTest)
     NodeId id{0};
     auto evictionman = std::make_unique<EvictionManager>();
     auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman);
-    auto peerLogic = PeerManager::make(0x1338, 0x1338, *connman, *m_node.addrman, *evictionman, nullptr, *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
+    auto peerLogic = PeerManager::make(0x1338, 0x1338, connman.get(), *m_node.addrman, *evictionman, nullptr, *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
 
     constexpr int max_outbound_block_relay{MAX_BLOCK_RELAY_ONLY_CONNECTIONS};
     constexpr int64_t MINIMUM_CONNECT_TIME{30};
@@ -325,7 +325,7 @@ BOOST_FIXTURE_TEST_CASE(block_relay_only_eviction, OutboundTest)
     BOOST_CHECK(vNodes.back()->fDisconnect == false);
 
     for (const auto& node : vNodes) {
-        peerLogic->MarkNodeDisconnected(node->GetId());
+        peerLogic->markNodeDisconnected(node->GetId());
     }
     connman->ClearTestNodes();
 }
@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE(peer_discouragement)
     auto evictionman = std::make_unique<EvictionManager>();
     auto banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist", nullptr, DEFAULT_MISBEHAVING_BANTIME);
     auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman);
-    auto peerLogic = PeerManager::make(0x1338, 0x1338, *connman, *m_node.addrman, *evictionman, banman.get(), *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
+    auto peerLogic = PeerManager::make(0x1338, 0x1338, connman.get(), *m_node.addrman, *evictionman, banman.get(), *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
 
     CConnman::Options options;
     options.m_msgproc = peerLogic.get();
@@ -445,7 +445,7 @@ BOOST_AUTO_TEST_CASE(peer_discouragement)
     BOOST_CHECK(nodes[2]->fDisconnect);
 
     for (auto node : nodes) {
-        peerLogic->MarkNodeDisconnected(node->GetId());
+        peerLogic->markNodeDisconnected(node->GetId());
     }
 }
 
@@ -456,7 +456,7 @@ BOOST_AUTO_TEST_CASE(DoS_bantime)
     auto evictionman = std::make_unique<EvictionManager>();
     auto banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist", nullptr, DEFAULT_MISBEHAVING_BANTIME);
     auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman);
-    auto peerLogic = PeerManager::make(0x1338, 0x1338, *connman, *m_node.addrman, *evictionman, banman.get(), *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
+    auto peerLogic = PeerManager::make(0x1338, 0x1338, connman.get(), *m_node.addrman, *evictionman, banman.get(), *m_node.chainman, *m_node.mempool, *m_node.warnings, {});
 
     CConnman::Options options;
     options.m_msgproc = peerLogic.get();
@@ -491,7 +491,7 @@ BOOST_AUTO_TEST_CASE(DoS_bantime)
     BOOST_CHECK(peerLogic->SendMessages(dummyNode.GetId()));
     BOOST_CHECK(banman->IsDiscouraged(addr));
 
-    peerLogic->MarkNodeDisconnected(dummyNode.GetId());
+    peerLogic->markNodeDisconnected(dummyNode.GetId());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

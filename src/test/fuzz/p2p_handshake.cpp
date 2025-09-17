@@ -52,7 +52,7 @@ FUZZ_TARGET(p2p_handshake, .init = ::initialize)
     NetGroupManager netgroupman{{}};
     EvictionManager evictionman{};
     AddrMan addrman{netgroupman, /*deterministic=*/true, /*consistency_check_ratio=*/0};
-    auto peerman = PeerManager::make(0x1338, 0x1338, connman, addrman, evictionman,
+    auto peerman = PeerManager::make(0x1338, 0x1338, &connman, addrman, evictionman,
                                      /*banman=*/nullptr, chainman,
                                      *g_setup->m_node.mempool, warnings,
                                      PeerManager::Options{
@@ -84,7 +84,7 @@ FUZZ_TARGET(p2p_handshake, .init = ::initialize)
         connman.AddTestNode(node);
         peerman->AddLocalServices(ServiceFlags{fuzzed_data_provider.ConsumeIntegral<uint64_t>()});
         peerman->RemoveLocalServices(ServiceFlags{fuzzed_data_provider.ConsumeIntegral<uint64_t>()});
-        peerman->InitializeNode(std::move(options));
+        peerman->initializeNode(std::move(options));
     }
 
     LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 100)
