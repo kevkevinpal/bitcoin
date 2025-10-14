@@ -39,6 +39,8 @@ std::string CopyrightHolders(const std::string& strPrefix);
 /** Returns licensing information (for -version) */
 std::string LicenseInfo();
 
+extern const std::string strSubVersion;
+
 #endif // RC_INVOKED
 
 #endif // BITCOIN_CLIENTVERSION_H

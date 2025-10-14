@@ -15,6 +15,8 @@
 
 using util::Join;
 
+const std::string strSubVersion = FormatSubVersion(UA_NAME, CLIENT_VERSION, std::vector<std::string>());
+
 /**
  * Name of client reported in the 'version' message. Report the same name
  * for both bitcoind and bitcoin-qt, to make it harder for attackers to

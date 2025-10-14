@@ -152,6 +152,7 @@ public:
     std::chrono::seconds m_last_send;
     std::chrono::seconds m_last_recv;
     std::chrono::seconds m_connected;
+    std::chrono::microseconds m_min_ping_time;
     std::string m_addr_name;
     bool fInbound;
     int m_starting_height;
@@ -172,6 +173,9 @@ public:
     TransportProtocolType m_transport_type;
     /** BIP324 session id string in hex, if any. */
     std::string m_session_id;
+    std::string cleanSubVer;
+    int nVersion;
+    std::string addrLocal;
 };
 
 

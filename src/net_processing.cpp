@@ -632,6 +632,9 @@ struct NewlyConnectedNode
   NodeId id;
   bool discouraged;
   PeerOptions options;
+
+  NewlyConnectedNode(long long nodeid, bool discouraged, PeerOptions options)
+    : id(nodeid), discouraged(discouraged), options(std::move(options)) {}
 };
 
 

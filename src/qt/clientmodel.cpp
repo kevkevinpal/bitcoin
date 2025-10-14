@@ -22,6 +22,8 @@
 #include <util/threadnames.h>
 #include <util/time.h>
 #include <validation.h>
+#include <init/p2p.h>
+#include <clientversion.h>
 
 #include <cstdint>
 

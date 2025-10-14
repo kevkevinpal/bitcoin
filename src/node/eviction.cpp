@@ -247,6 +247,7 @@ std::optional<NodeId> SelectBlockRelayNodeToEvict(std::vector<NodeEvictionCandid
     {
         NodeId id;
         std::chrono::seconds last_block_time;
+        BlockRelayEviction(NodeId id_, std::chrono::seconds time_) : id(id_), last_block_time(time_) {}
     };
 
     std::optional<BlockRelayEviction> youngest_peer{std::nullopt}, next_youngest_peer{std::nullopt};
@@ -277,6 +278,7 @@ std::optional<NodeId> SelectFullOutboundNodeToEvict(std::vector<NodeEvictionCand
     {
         NodeId id;
         std::chrono::seconds last_block_announcement;
+        FullOutboundEviction(NodeId id_, std::chrono::seconds time_) : id(id_), last_block_announcement(time_) {}
     };
 
     std::array<unsigned int, Network::NET_MAX> network_conn_counts {};

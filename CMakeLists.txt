@@ -150,6 +150,12 @@ if(ENABLE_IPC AND WITH_EXTERNAL_LIBMULTIPROCESS)
   )
 endif()
 
+if(BUILD_BITCOIN_P2P)
+  find_package(Libevent REQUIRED)
+  include_directories(${LIBEVENT_INCLUDE_DIR})
+  target_link_libraries(bitcoin_common ${LIBEVENT_LIBRARIES})
+endif()
+
 cmake_dependent_option(BUILD_BITCOIN_P2P "Build bitcoin-p2p executable." OFF "ENABLE_IPC" OFF)
 cmake_dependent_option(BUILD_GUI_TESTS "Build test_bitcoin-qt executable." ON "BUILD_GUI;BUILD_TESTS" OFF)
 if(BUILD_GUI)

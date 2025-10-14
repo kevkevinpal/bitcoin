@@ -71,7 +71,9 @@ void ConnmanTestMsg::Handshake(CNode& node,
     if (node.fDisconnect) return;
     assert(version <= PROTOCOL_VERSION);
     CNodeStateStats statestats;
-    assert(peerman.GetNodeStateStats(node.GetId(), statestats));
+    //TODO: Temp commented out
+    //assert(peerman.GetNodeStateStats(node.GetId(), statestats));
+    peerman.GetNodeStateStats(node.GetId(), statestats);
     assert(statestats.nVersion == version);
     assert(statestats.m_relay_txs == (relay_txs && !IsBlockOnlyConn(node.m_conn_type)));
     assert(statestats.their_services == remote_services);

@@ -147,6 +147,7 @@ namespace tfm = tinyformat;
 #include <sstream>
 #include <stdexcept> // Added for Bitcoin Core
 #include <util/string.h> // Added for Bitcoin Core
+#include <chrono>
 
 #ifndef TINYFORMAT_ASSERT
 #   include <cassert>
@@ -303,6 +304,11 @@ struct convertToInt<T,true>
     static int invoke(const T& value) { return static_cast<int>(value); }
 };
 
+template<typename Rep, typename Period>
+std::ostream& operator<<(std::ostream& os, const std::chrono::duration<Rep, Period>& duration) {
+    return os << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << "ms";
+}
+
 // Format at most ntrunc characters to the given stream.
 template<typename T>
 inline void formatTruncated(std::ostream& out, const T& value, int ntrunc)
@@ -333,6 +339,11 @@ TINYFORMAT_DEFINE_FORMAT_TRUNCATED_CSTR(char)
 // Variable formatting functions.  May be overridden for user-defined types if
 // desired.
 
+
+template<typename Rep, typename Period>
+std::ostream& operator<<(std::ostream& os, const std::chrono::duration<Rep, Period>& duration) {
+    return os << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << "ms";
+}
 
 /// Format a value into a stream, delegating to operator<< by default.
 ///

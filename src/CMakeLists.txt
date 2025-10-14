@@ -148,6 +148,9 @@ target_link_libraries(bitcoin_common
     secp256k1
     Boost::headers
     $<TARGET_NAME_IF_EXISTS:USDT::headers>
+    $<TARGET_NAME_IF_EXISTS:libevent::core>
+    $<TARGET_NAME_IF_EXISTS:libevent::extra>
+    $<TARGET_NAME_IF_EXISTS:libevent::pthreads>
     $<$<PLATFORM_ID:Windows>:ws2_32>
 )
 
@@ -395,9 +398,9 @@ if(BUILD_BITCOIN_P2P)
     secp256k1
     Boost::headers
     $<TARGET_NAME_IF_EXISTS:USDT::headers>
-    $<TARGET_NAME_IF_EXISTS:libevent::core>
-    $<TARGET_NAME_IF_EXISTS:libevent::extra>
-    $<TARGET_NAME_IF_EXISTS:libevent::pthreads>
+    libevent::core
+    libevent::extra
+    libevent::pthreads
     $<$<PLATFORM_ID:Windows>:ws2_32>
 )
 endif()
