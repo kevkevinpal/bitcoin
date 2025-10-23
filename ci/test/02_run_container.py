@@ -80,7 +80,7 @@ def main():
         CI_DEPENDS_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_depends,dst={os.environ['DEPENDS_DIR']}/built"
         CI_DEPENDS_SOURCES_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_depends_sources,dst={os.environ['DEPENDS_DIR']}/sources"
         CI_PREVIOUS_RELEASES_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_previous_releases,dst={os.environ['PREVIOUS_RELEASES_DIR']}"
-        CI_BUILD_MOUNT = []
+        CI_BUILD_MOUNT = ""
 
         if os.getenv("DANGER_CI_ON_HOST_FOLDERS"):
             # ensure the directories exist
@@ -94,7 +94,7 @@ def main():
             CI_DEPENDS_MOUNT = f"type=bind,src={os.environ['DEPENDS_DIR']}/built,dst={os.environ['DEPENDS_DIR']}/built"
             CI_DEPENDS_SOURCES_MOUNT = f"type=bind,src={os.environ['DEPENDS_DIR']}/sources,dst={os.environ['DEPENDS_DIR']}/sources"
             CI_PREVIOUS_RELEASES_MOUNT = f"type=bind,src={os.environ['PREVIOUS_RELEASES_DIR']},dst={os.environ['PREVIOUS_RELEASES_DIR']}"
-            CI_BUILD_MOUNT = [f"--mount=type=bind,src={os.environ['BASE_BUILD_DIR']},dst={os.environ['BASE_BUILD_DIR']}"]
+            CI_BUILD_MOUNT = f"--mount=type=bind,src={os.environ['BASE_BUILD_DIR']},dst={os.environ['BASE_BUILD_DIR']}"
 
         if os.getenv("DANGER_CI_ON_HOST_CCACHE_FOLDER"):
             if not os.path.isdir(os.environ["CCACHE_DIR"]):
@@ -128,7 +128,7 @@ def main():
             f"--mount={CI_DEPENDS_MOUNT}",
             f"--mount={CI_DEPENDS_SOURCES_MOUNT}",
             f"--mount={CI_PREVIOUS_RELEASES_MOUNT}",
-            *CI_BUILD_MOUNT,
+            CI_BUILD_MOUNT,
             f"--env-file={env_file}",
             f"--name={os.environ['CONTAINER_NAME']}",
             "--network=ci-ip6net",
