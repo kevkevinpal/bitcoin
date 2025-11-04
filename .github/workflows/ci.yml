@@ -660,11 +660,11 @@ jobs:
         run: |
           "$RUNNER_TEMP/fuzztest/bazel-bin/centipede/centipede" \
             --workdir=artifacts/ \
-            --corpus="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
+            --corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
             build_fuzz/bin/fuzz_* \
             --j=$(nproc --all) \
             --num_runs=100 \
-            --timeout=1800
+            --timeout_per_input=60
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
