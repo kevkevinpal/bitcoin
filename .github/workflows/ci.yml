@@ -661,11 +661,12 @@ jobs:
           "$RUNNER_TEMP/fuzztest/bazel-bin/centipede/centipede" \
             --workdir=artifacts/ \
             --corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
-            build_fuzz/bin/fuzz_* \
-            --j=$(nproc --all) \
+            --binary=build_fuzz/bin/fuzz_* \
+            --j=2 \
             --num_runs=100 \
             --timeout_per_input=60 \
-            --require_pc_table=false
+            --require_pc_table=false \
+            --fork_server=0
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
