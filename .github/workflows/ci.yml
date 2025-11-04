@@ -626,6 +626,13 @@ jobs:
         uses: ./.github/actions/configure-docker
         with:
           cache-provider: ${{ needs.runners.outputs.provider }}
+      - name: Install deps including Boost
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang-18 libc++-18-dev libc++abi-18-dev \
+            libboost-dev libboost-system-dev libboost-filesystem-dev \
+            libevent-dev libsqlite3-dev libzmq3-dev
       - name: Install Centipede deps
         run: |
           sudo apt-get update
