@@ -664,7 +664,7 @@ jobs:
             build_fuzz/bin/fuzz_* \
             --j=$(nproc --all) \
             --num_runs=100 \
-            --timeout_per_input=60
+            --timeout_per_input=60 \
             --require_pc_table=false
       - name: Upload artifacts
         if: always()
