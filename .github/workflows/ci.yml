@@ -659,11 +659,13 @@ jobs:
       - name: Run Centipede
         run: |
           mkdir -p artifacts
-          find build_fuzz/bin -name "fuzz_*" -executable -type f > binaries.txt
+          BINARIES=$(find build_fuzz/bin -name "fuzz_*" -type f -executable | tr '\n' ':')
+          [ -z "$BINARIES" ] && { echo "No fuzzers found!"; exit 1; }
+          echo "Found binaries: $BINARIES"
           "$RUNNER_TEMP/fuzztest/bazel-bin/centipede/centipede" \
             --workdir=artifacts/ \
             --corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
-            --binary=@binaries.txt \
+            --binary="$BINARIES" \
             --j=2 \
             --num_runs=100 \
             --timeout_per_input=60 \
