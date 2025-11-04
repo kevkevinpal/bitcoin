@@ -662,7 +662,9 @@ jobs:
             --workdir=artifacts/ \
             --corpus="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
             build_fuzz/bin/fuzz_* \
-            --j=$(nproc --all) --num_runs=100
+            --j=$(nproc --all) \
+            --num_runs=100 \
+            --timeout=1800
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
