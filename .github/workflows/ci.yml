@@ -659,10 +659,10 @@ jobs:
       - name: Run Centipede
         run: |
           "$RUNNER_TEMP/fuzztest/bazel-bin/centipede/centipede" \
-            -artifact_prefix=artifacts/ \
-            -corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
+            --workdir=artifacts/ \
+            --corpus="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
             build_fuzz/bin/fuzz_* \
-            -jobs=8 -max_total_time=1800
+            --j=$(nproc --all) --num_runs=100
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
