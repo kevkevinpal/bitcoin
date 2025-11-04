@@ -658,10 +658,12 @@ jobs:
           git clone --depth=1 https://github.com/bitcoin-core/qa-assets "$RUNNER_TEMP/qa-assets"
       - name: Run Centipede
         run: |
+          mkdir -p artifacts
+          find build_fuzz/bin -name "fuzz_*" -executable -type f > binaries.txt
           "$RUNNER_TEMP/fuzztest/bazel-bin/centipede/centipede" \
             --workdir=artifacts/ \
             --corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
-            --binary=build_fuzz/bin/fuzz_* \
+            --binary=@binaries.txt \
             --j=2 \
             --num_runs=100 \
             --timeout_per_input=60 \
