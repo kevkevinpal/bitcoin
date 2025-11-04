@@ -607,3 +607,57 @@ jobs:
             CIRRUS_PR_FLAG="-e CIRRUS_PR=1"
           fi
           docker run --rm $CIRRUS_PR_FLAG -v "$(pwd)":/bitcoin "$CONTAINER_NAME"
+
+  fuzz-centipede:
+    name: 'Centipede fuzzer'
+    needs: runners
+    runs-on: ${{ needs.runners.outputs.provider == 'cirrus' && 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-lg' || 'ubuntu-24.04' }}
+    timeout-minutes: 60
+    env:
+      FILE_ENV: './ci/test/00_setup_env_native_fuzz.sh'
+      DANGER_CI_ON_HOST_FOLDERS: 1
+    steps:
+      - *CHECKOUT
+      - name: Configure environment
+        uses: ./.github/actions/configure-environment
+      - name: Restore caches
+        uses: ./.github/actions/restore-caches
+      - name: Configure Docker
+        uses: ./.github/actions/configure-docker
+        with:
+          cache-provider: ${{ needs.runners.outputs.provider }}
+      - name: Install Centipede deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl gnupg
+          curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > /usr/share/keyrings/bazel.gpg
+          echo "deb [signed-by=/usr/share/keyrings/bazel.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+          sudo apt-get update
+          sudo apt-get install -y bazel clang-18 libc++-18-dev libc++abi-18-dev
+      - name: Build libFuzzer targets
+        run: |
+          cmake --preset=libfuzzer -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18
+          cmake --build build_fuzz --parallel
+      - name: Clone & build Centipede
+        run: |
+          git clone https://github.com/google/fuzztest.git "$RUNNER_TEMP/fuzztest"
+          cd "$RUNNER_TEMP/fuzztest"
+          bazel build //centipede:centipede
+      - name: Download corpus
+        run: |
+          git clone --depth=1 https://github.com/bitcoin-core/qa-assets "$RUNNER_TEMP/qa-assets"
+      - name: Run Centipede
+        run: |
+          "$RUNNER_TEMP/fuzztest/bazel-bin/centipede/centipede" \
+            -artifact_prefix=artifacts/ \
+            -corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
+            build_fuzz/bin/fuzz_* \
+            -jobs=8 -max_total_time=1800
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: centipede-artifacts
+          path: artifacts/
+      - name: Save caches
+        uses: ./.github/actions/save-caches
