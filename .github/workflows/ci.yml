@@ -663,6 +663,7 @@ jobs:
             --workdir=artifacts/ \
             --corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
             --binary=build_fuzz/bin/fuzz \
+            --binary_arg='--print-all-fuzz-targets' \
             --j=2 \
             --num_runs=100 \
             --timeout_per_input=60 \
