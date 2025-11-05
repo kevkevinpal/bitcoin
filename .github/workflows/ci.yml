@@ -656,19 +656,41 @@ jobs:
       - name: Download corpus
         run: |
           git clone --depth=1 https://github.com/bitcoin-core/qa-assets "$RUNNER_TEMP/qa-assets"
-      - name: Run Centipede
+      - name: Run Centipede (all targets)
         run: |
           mkdir -p artifacts
-          "$RUNNER_TEMP/fuzztest/bazel-bin/centipede/centipede" \
-            --workdir=artifacts/ \
-            --corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
-            --binary=build_fuzz/bin/fuzz \
-            --binary_arg='--print-all-fuzz-targets' \
-            --j=2 \
-            --num_runs=100 \
-            --timeout_per_input=60 \
-            --require_pc_table=false \
-            --fork_server=0
+
+          # ---- discover every compiled fuzz target ---------------------------------
+          TARGETS=$(env PRINT_ALL_FUZZ_TARGETS_AND_ABORT=1 \
+                     build_fuzz/bin/fuzz 2>&1 \
+                     | grep -Eo 'fuzz_[_a-zA-Z0-9]+' \
+                     | sort -u)
+
+          if [ -z "$TARGETS" ]; then
+            echo "No fuzz targets found!"
+            exit 1
+          fi
+
+          echo "Found targets:"
+          echo "$TARGETS" | tr ' ' '\n'
+
+          # ---- run Centipede once per target ---------------------------------------
+          for t in $TARGETS; do
+            echo "=== Centipede on $t ==="
+            mkdir -p "artifacts/$t"
+            "$RUNNER_TEMP/fuzztest/bazel-bin/centipede/centipede" \
+              --workdir="artifacts/$t" \
+              --corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
+              --binary=build_fuzz/bin/fuzz \
+              --extra_binaries=build_fuzz/bin/fuzz \
+              --env="FUZZ=$t" \
+              --j=2 \
+              --num_runs=200 \
+              --timeout_per_input=60 \
+              --require_pc_table=false \
+              --fork_server=0
+          done
+        timeout-minutes: 20
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
