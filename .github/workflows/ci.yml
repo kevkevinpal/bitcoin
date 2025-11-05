@@ -663,7 +663,6 @@ jobs:
           # ---- discover every compiled fuzz target ---------------------------------
           TARGETS=$(env PRINT_ALL_FUZZ_TARGETS_AND_ABORT=1 \
                      build_fuzz/bin/fuzz 2>&1 \
-                     | grep -Eo 'fuzz_[_a-zA-Z0-9]+' \
                      | sort -u)
 
           if [ -z "$TARGETS" ]; then
