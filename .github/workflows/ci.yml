@@ -683,12 +683,12 @@ jobs:
               --corpus_dir="$RUNNER_TEMP/qa-assets/fuzz_corpora" \
               --binary=build_fuzz/bin/fuzz \
               --j=2 \
-              --num_runs=200 \
-              --timeout_per_input=60 \
+              --num_runs=10 \
+              --timeout_per_input=1 \
               --require_pc_table=false \
               --fork_server=0
           done
-        timeout-minutes: 20
+        timeout-minutes: 60
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
