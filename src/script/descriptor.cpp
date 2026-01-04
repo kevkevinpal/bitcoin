@@ -1551,21 +1551,8 @@ public:
     MiniscriptDescriptor(std::vector<std::unique_ptr<PubkeyProvider>> providers, miniscript::NodeRef<uint32_t> node)
         : DescriptorImpl(std::move(providers), "?"), m_node(std::move(node))
     {
-        // Traverse miniscript tree for unsafe use of older()
-        miniscript::ForEachNode(*m_node, [&](const miniscript::Node<uint32_t>& node) {
-            if (node.fragment == miniscript::Fragment::OLDER) {
-                const uint32_t raw = node.k;
-                const uint32_t value_part = raw & ~CTxIn::SEQUENCE_LOCKTIME_TYPE_FLAG;
-                if (value_part > CTxIn::SEQUENCE_LOCKTIME_MASK) {
-                    const bool is_time_based = (raw & CTxIn::SEQUENCE_LOCKTIME_TYPE_FLAG) != 0;
-                    if (is_time_based) {
-                        m_warnings.push_back(strprintf("time-based relative locktime: older(%u) > (65535 * 512) seconds is unsafe", raw));
-                    } else {
-                        m_warnings.push_back(strprintf("height-based relative locktime: older(%u) > 65535 blocks is unsafe", raw));
-                    }
-                }
-            }
-        });
+        // Collect any warnings from the miniscript tree
+        m_warnings = m_node->GetWarnings();
     }
 
     bool ToStringHelper(const SigningProvider* arg, std::string& out, const StringType type,

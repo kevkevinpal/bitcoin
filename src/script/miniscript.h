@@ -1575,6 +1575,26 @@ public:
     //! Return the script context for this node.
     MiniscriptContext GetMsCtx() const { return m_script_ctx; }
 
+    //! Collect warnings for unsafe older() usage across the entire tree.
+    std::vector<std::string> GetWarnings() const {
+        std::vector<std::string> warnings;
+        ForEachNode(*this, [&warnings](const Node& node) {
+            if (node.fragment == Fragment::OLDER) {
+                const uint32_t raw = node.k;
+                const uint32_t value_part = raw & ~CTxIn::SEQUENCE_LOCKTIME_TYPE_FLAG;
+                if (value_part > CTxIn::SEQUENCE_LOCKTIME_MASK) {
+                    const bool is_time_based = (raw & CTxIn::SEQUENCE_LOCKTIME_TYPE_FLAG) != 0;
+                    if (is_time_based) {
+                        warnings.push_back(strprintf("time-based relative locktime: older(%u) > (65535 * 512) seconds is unsafe", raw));
+                    } else {
+                        warnings.push_back(strprintf("height-based relative locktime: older(%u) > 65535 blocks is unsafe", raw));
+                    }
+                }
+            }
+        });
+        return warnings;
+    }
+
     //! Find an insane subnode which has no insane children. Nullptr if there is none.
     const Node* FindInsaneSub() const {
         return TreeEval<const Node*>([](const Node& node, std::span<const Node*> subs) -> const Node* {
