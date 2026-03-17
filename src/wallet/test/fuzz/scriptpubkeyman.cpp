@@ -184,7 +184,11 @@ FUZZ_TARGET(scriptpubkeyman, .init = initialize_spkm)
                     return;
                 }
                 auto psbt{*opt_psbt};
-                const PrecomputedTransactionData txdata{PrecomputePSBTData(psbt)};
+                std::optional<PrecomputedTransactionData> txdata_res = PrecomputePSBTData(psbt);
+                if (!txdata_res) {
+                    return;
+                }
+                const PrecomputedTransactionData& txdata = *txdata_res;
                 common::PSBTFillOptions options{
                     .sign = fuzzed_data_provider.ConsumeBool(),
                     .sighash_type = fuzzed_data_provider.ConsumeIntegralInRange<int>(0, 151),
