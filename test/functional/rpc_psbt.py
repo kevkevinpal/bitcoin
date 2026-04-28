@@ -25,6 +25,7 @@ from test_framework.psbt import (
     PSBT,
     PSBTMap,
     PSBT_GLOBAL_UNSIGNED_TX,
+    PSBT_GLOBAL_VERSION,
     PSBT_IN_RIPEMD160,
     PSBT_IN_SHA256,
     PSBT_IN_SIGHASH_TYPE,
@@ -875,6 +876,15 @@ class PSBTTest(BitcoinTestFramework):
         merged_unknown_psbt = PSBT.from_base64(merged_unknown)
         assert_equal(merged_unknown_psbt.i[0].map[unknown_key], unknown_value)
         assert_equal(merged_unknown_psbt.i[0].map[unknown_key2], unknown_value)
+
+        # The explicit PSBT_GLOBAL_VERSION=0 encoding is equivalent to omitting the
+        # version field, and both accepted v0 encodings can be merged.
+        explicit_v0_psbt = self.create_psbt(inputs={unknown_key2: unknown_value})
+        explicit_v0_psbt.g.map[PSBT_GLOBAL_VERSION] = (0).to_bytes(4, "little")
+        merged_v0_versions = self.nodes[0].combinepsbt([unknown_psbt, explicit_v0_psbt.to_base64()])
+        merged_v0_versions_psbt = PSBT.from_base64(merged_v0_versions)
+        assert_equal(merged_v0_versions_psbt.i[0].map[unknown_key], unknown_value)
+        assert_equal(merged_v0_versions_psbt.i[0].map[unknown_key2], unknown_value)
 
         # BIP 174 Test Vectors
 
