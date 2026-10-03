@@ -80,10 +80,28 @@ void FuzzFrameworkRegisterTarget(std::string_view name, TypeTestOneInput target,
 static std::string_view g_fuzz_target;
 static const TypeTestOneInput* g_test_one_input{nullptr};
 
+// OR'd after each input. initialize() also seeds the global PRNG; that call is not counted here.
+static bool g_ever_used_g_prng{false};
+static int g_tested{0};
+
+static void FailIfUnusedPrngSeed()
+{
+    // Same check as the nightly fuzz harness. Run at process exit so libFuzzer,
+    // which does not use main(), hits it too.
+    if (g_tested && !g_ever_used_g_prng && g_seeded_g_prng_zero) {
+        // main() installs a SIGABRT handler that attributes the abort to the last
+        // corpus file. This failure is about the whole run.
+        std::signal(SIGABRT, SIG_DFL);
+        Assert(false); // remove unused SeedRandomStateForTest(SeedRand::ZEROS)?
+    }
+}
+
 static void test_one_input(FuzzBufferType buffer)
 {
     CheckGlobals check{};
     (*Assert(g_test_one_input))(buffer);
+    ++g_tested;
+    g_ever_used_g_prng |= g_used_g_prng.load();
 }
 
 const std::function<std::string()> G_TEST_GET_FULL_NAME{[]{
@@ -92,6 +110,8 @@ const std::function<std::string()> G_TEST_GET_FULL_NAME{[]{
 
 static void initialize()
 {
+    // Covers libFuzzer (no main() in this file) and the built-in corpus runner.
+    std::atexit(FailIfUnusedPrngSeed);
     CheckGlobals check{};
     // By default, make the RNG deterministic with a fixed seed. This will affect all
     // randomness during the fuzz test, except:
